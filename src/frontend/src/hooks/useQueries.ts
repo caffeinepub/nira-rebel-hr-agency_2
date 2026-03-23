@@ -1,4 +1,5 @@
 import type { ApplicationStatus, DirectApplication } from "@/backend";
+import type { UserRole } from "@/backend";
 import { useActor } from "@/hooks/useActor";
 import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -187,5 +188,20 @@ export function useCallerProfile() {
       return actor.getCallerUserProfile();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAssignUserRole() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.assignCallerUserRole(user, role);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
   });
 }

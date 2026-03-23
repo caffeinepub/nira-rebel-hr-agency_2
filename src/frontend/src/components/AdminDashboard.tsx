@@ -22,10 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   useAssignStaffRole,
+  useAssignUserRole,
   useIsAdmin,
   useListAllApplications,
   useListAllDirectApplications,
@@ -68,6 +70,7 @@ export default function AdminDashboard() {
 
   const assignStaff = useAssignStaffRole();
   const removeStaff = useRemoveStaffRole();
+  const assignUserRole = useAssignUserRole();
   const updateStatus = useUpdateApplicationStatus();
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -152,6 +155,19 @@ export default function AdminDashboard() {
       toast.success("Staff role removed");
     } catch {
       toast.error("Failed to remove staff role");
+    }
+  };
+
+  const handleMakeAdmin = async (principalStr: string) => {
+    try {
+      const { Principal } = await import("@icp-sdk/core/principal");
+      await assignUserRole.mutateAsync({
+        user: Principal.fromText(principalStr),
+        role: UserRole.admin,
+      });
+      toast.success("Admin role assigned");
+    } catch {
+      toast.error("Failed to assign admin role");
     }
   };
 
@@ -353,407 +369,488 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {[
-            { label: "Total Users", value: users.length, icon: "👤" },
-            {
-              label: "Applications",
-              value: directApplications.length,
-              icon: "📋",
-            },
-            {
-              label: "Shortlisted",
-              value: applications.filter(
-                ([, a]) => a.status === ApplicationStatus.shortlisted,
-              ).length,
-              icon: "⭐",
-            },
-            {
-              label: "Interviewed",
-              value: applications.filter(
-                ([, a]) => a.status === ApplicationStatus.interviewed,
-              ).length,
-              icon: "🎯",
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="p-5 rounded-xl border"
-              style={{
-                background: "oklch(0.99 0.003 260)",
-                borderColor: "oklch(0.88 0.003 260)",
-              }}
+        <Tabs defaultValue="overview">
+          <TabsList
+            className="mb-8 h-11"
+            style={{
+              background: "oklch(0.96 0.003 260)",
+              border: "1px solid oklch(0.88 0.003 260)",
+            }}
+          >
+            <TabsTrigger
+              value="overview"
+              data-ocid="admin.tab"
+              className="px-6 text-sm font-medium data-[state=active]:text-white"
+              style={
+                {
+                  // active state handled via CSS var override below
+                }
+              }
             >
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {stat.value}
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {stat.label}
-              </div>
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="staff-management"
+              data-ocid="admin.tab"
+              className="px-6 text-sm font-medium data-[state=active]:text-white"
+            >
+              <Users size={15} className="mr-1.5" />
+              Staff Management
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ─── OVERVIEW TAB ─── */}
+          <TabsContent value="overview">
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              {[
+                { label: "Total Users", value: users.length, icon: "👤" },
+                {
+                  label: "Applications",
+                  value: directApplications.length,
+                  icon: "📋",
+                },
+                {
+                  label: "Shortlisted",
+                  value: applications.filter(
+                    ([, a]) => a.status === ApplicationStatus.shortlisted,
+                  ).length,
+                  icon: "⭐",
+                },
+                {
+                  label: "Interviewed",
+                  value: applications.filter(
+                    ([, a]) => a.status === ApplicationStatus.interviewed,
+                  ).length,
+                  icon: "🎯",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="p-5 rounded-xl border"
+                  style={{
+                    background: "oklch(0.99 0.003 260)",
+                    borderColor: "oklch(0.88 0.003 260)",
+                  }}
+                >
+                  <div className="text-2xl mb-1">{stat.icon}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {stat.value}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Users Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-2 mb-4">
-            <Users size={18} style={{ color: "oklch(0.62 0.18 40)" }} />
-            <h2 className="text-lg font-bold text-gray-900">
-              Registered Users
-            </h2>
-            <span
-              className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.12)",
-                color: "oklch(0.62 0.18 40)",
-              }}
-            >
-              {users.length}
-            </span>
-          </div>
-          <div
-            className="rounded-xl border overflow-hidden"
-            style={{ borderColor: "oklch(0.88 0.003 260)" }}
-          >
-            {loadingUsers ? (
-              <div data-ocid="admin.loading_state" className="p-8 text-center">
-                <Loader2
-                  className="animate-spin mx-auto mb-2"
-                  size={20}
-                  style={{ color: "oklch(0.62 0.18 40)" }}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Loading users...
-                </p>
+            {/* Direct Applications Section */}
+            <section className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">📝</span>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Direct Applications
+                </h2>
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    background: "oklch(0.62 0.18 40 / 0.12)",
+                    color: "oklch(0.62 0.18 40)",
+                  }}
+                >
+                  {directApplications.length}
+                </span>
               </div>
-            ) : users.length === 0 ? (
               <div
-                data-ocid="admin.empty_state"
-                className="p-8 text-center text-sm text-muted-foreground"
+                className="rounded-xl border overflow-hidden"
+                style={{ borderColor: "oklch(0.88 0.003 260)" }}
               >
-                No users registered yet.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Profile Type</TableHead>
-                    <TableHead>Staff Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map(([principal, profile], idx) => {
-                    const pStr = principal.toString();
-                    const isStaff =
-                      profile.profileType ===
-                      Variant_staff_employer_candidate.staff;
-                    return (
-                      <TableRow
-                        key={pStr}
-                        data-ocid={`admin.row.${idx + 1}`}
-                        style={{ background: "oklch(0.99 0.003 260)" }}
-                      >
-                        <TableCell className="font-medium text-gray-900">
-                          {profile.name || shortPrincipal(pStr)}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {profile.email || "—"}
-                        </TableCell>
-                        <TableCell>
-                          <span className="capitalize text-sm">
-                            {profile.profileType}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {isStaff ? (
-                            <Badge className="bg-green-100 text-green-700 border-0">
-                              Staff
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-gray-100 text-gray-600 border-0">
-                              User
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {isStaff ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                data-ocid={`admin.delete_button.${idx + 1}`}
-                                onClick={() => handleRemoveStaff(pStr)}
-                                disabled={removeStaff.isPending}
-                                className="text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs"
-                              >
-                                Remove Staff
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                data-ocid={`admin.primary_button.${idx + 1}`}
-                                onClick={() => handleAssignStaff(pStr)}
-                                disabled={assignStaff.isPending}
-                                className="h-7 text-xs text-white"
-                                style={{ background: "oklch(0.62 0.18 40)" }}
-                              >
-                                Assign Staff
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
+                {loadingDirectApps ? (
+                  <div
+                    data-ocid="admin.loading_state"
+                    className="p-8 text-center"
+                  >
+                    <Loader2
+                      className="animate-spin mx-auto mb-2"
+                      size={20}
+                      style={{ color: "oklch(0.62 0.18 40)" }}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Loading applications...
+                    </p>
+                  </div>
+                ) : directApplications.length === 0 ? (
+                  <div
+                    data-ocid="admin.empty_state"
+                    className="p-8 text-center text-sm text-muted-foreground"
+                  >
+                    No direct applications yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
+                        <TableHead className="text-black">#</TableHead>
+                        <TableHead className="text-black">
+                          Candidate Name
+                        </TableHead>
+                        <TableHead className="text-black">
+                          Job Applied For
+                        </TableHead>
+                        <TableHead className="text-black">Phone</TableHead>
+                        <TableHead className="text-black">Email</TableHead>
+                        <TableHead className="text-black">Status</TableHead>
+                        <TableHead className="text-black">
+                          Update Status
+                        </TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </section>
+                    </TableHeader>
+                    <TableBody>
+                      {directApplications.map(
+                        (
+                          [id, app]: [bigint, DirectApplication],
+                          idx: number,
+                        ) => (
+                          <TableRow
+                            key={id.toString()}
+                            data-ocid={`admin.row.${idx + 1}`}
+                            style={{ background: "oklch(0.99 0.003 260)" }}
+                          >
+                            <TableCell className="text-black">
+                              {idx + 1}
+                            </TableCell>
+                            <TableCell className="font-medium text-black">
+                              {app.candidateName}
+                            </TableCell>
+                            <TableCell className="text-black">
+                              {app.jobTitle}
+                            </TableCell>
+                            <TableCell className="text-black">
+                              {app.phone || "—"}
+                            </TableCell>
+                            <TableCell className="text-black">
+                              {app.email || "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={`border-0 ${
+                                  STATUS_COLORS[app.status as ApplicationStatus]
+                                }`}
+                              >
+                                {app.status as string}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={app.status as string}
+                                onValueChange={(val) => {
+                                  updateDirectStatus
+                                    .mutateAsync({
+                                      id,
+                                      status: val as ApplicationStatus,
+                                    })
+                                    .then(() => toast.success("Status updated"))
+                                    .catch(() =>
+                                      toast.error("Failed to update status"),
+                                    );
+                                }}
+                              >
+                                <SelectTrigger
+                                  data-ocid={`admin.select.${idx + 1}`}
+                                  className="h-8 text-xs w-36"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={ApplicationStatus.pending}>
+                                    Pending
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={ApplicationStatus.shortlisted}
+                                  >
+                                    Shortlisted
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={ApplicationStatus.interviewed}
+                                  >
+                                    Interviewed
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={ApplicationStatus.rejected}
+                                  >
+                                    Rejected
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          </TableRow>
+                        ),
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </section>
 
-        {/* Direct Applications Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">📝</span>
-            <h2 className="text-lg font-bold text-gray-900">
-              Direct Applications
-            </h2>
-            <span
-              className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.12)",
-                color: "oklch(0.62 0.18 40)",
-              }}
-            >
-              {directApplications.length}
-            </span>
-          </div>
-          <div
-            className="rounded-xl border overflow-hidden"
-            style={{ borderColor: "oklch(0.88 0.003 260)" }}
-          >
-            {loadingDirectApps ? (
-              <div data-ocid="admin.loading_state" className="p-8 text-center">
-                <Loader2
-                  className="animate-spin mx-auto mb-2"
-                  size={20}
-                  style={{ color: "oklch(0.62 0.18 40)" }}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Loading applications...
-                </p>
+            {/* Applications Section */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">📋</span>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Job Applications
+                </h2>
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    background: "oklch(0.62 0.18 40 / 0.12)",
+                    color: "oklch(0.62 0.18 40)",
+                  }}
+                >
+                  {applications.length}
+                </span>
               </div>
-            ) : directApplications.length === 0 ? (
               <div
-                data-ocid="admin.empty_state"
-                className="p-8 text-center text-sm text-muted-foreground"
+                className="rounded-xl border overflow-hidden"
+                style={{ borderColor: "oklch(0.88 0.003 260)" }}
               >
-                No direct applications yet.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
-                    <TableHead className="text-black">#</TableHead>
-                    <TableHead className="text-black">Candidate Name</TableHead>
-                    <TableHead className="text-black">
-                      Job Applied For
-                    </TableHead>
-                    <TableHead className="text-black">Phone</TableHead>
-                    <TableHead className="text-black">Email</TableHead>
-                    <TableHead className="text-black">Status</TableHead>
-                    <TableHead className="text-black">Update Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {directApplications.map(
-                    ([id, app]: [bigint, DirectApplication], idx: number) => (
-                      <TableRow
-                        key={id.toString()}
-                        data-ocid={`admin.row.${idx + 1}`}
-                        style={{ background: "oklch(0.99 0.003 260)" }}
-                      >
-                        <TableCell className="text-black">{idx + 1}</TableCell>
-                        <TableCell className="font-medium text-black">
-                          {app.candidateName}
-                        </TableCell>
-                        <TableCell className="text-black">
-                          {app.jobTitle}
-                        </TableCell>
-                        <TableCell className="text-black">
-                          {app.phone || "—"}
-                        </TableCell>
-                        <TableCell className="text-black">
-                          {app.email || "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={`border-0 ${STATUS_COLORS[app.status as ApplicationStatus]}`}
-                          >
-                            {app.status as string}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={app.status as string}
-                            onValueChange={(val) => {
-                              updateDirectStatus
-                                .mutateAsync({
-                                  id,
-                                  status: val as ApplicationStatus,
-                                })
-                                .then(() => toast.success("Status updated"))
-                                .catch(() =>
-                                  toast.error("Failed to update status"),
-                                );
-                            }}
-                          >
-                            <SelectTrigger
-                              data-ocid={`admin.select.${idx + 1}`}
-                              className="h-8 text-xs w-36"
+                {loadingApps ? (
+                  <div
+                    data-ocid="admin.loading_state"
+                    className="p-8 text-center"
+                  >
+                    <Loader2
+                      className="animate-spin mx-auto mb-2"
+                      size={20}
+                      style={{ color: "oklch(0.62 0.18 40)" }}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Loading applications...
+                    </p>
+                  </div>
+                ) : applications.length === 0 ? (
+                  <div
+                    data-ocid="admin.empty_state"
+                    className="p-8 text-center text-sm text-muted-foreground"
+                  >
+                    No applications yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
+                        <TableHead>Applicant</TableHead>
+                        <TableHead>Job Title</TableHead>
+                        <TableHead>Cover Letter</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Update Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {applications.map(([id, app], idx) => (
+                        <TableRow
+                          key={id.toString()}
+                          data-ocid={`admin.row.${idx + 1}`}
+                          style={{ background: "oklch(0.99 0.003 260)" }}
+                        >
+                          <TableCell className="font-mono text-xs text-muted-foreground">
+                            {shortPrincipal(app.applicant.toString())}
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-900">
+                            {jobMap.get(app.jobId.toString()) ||
+                              `Job #${app.jobId}`}
+                          </TableCell>
+                          <TableCell className="max-w-[200px]">
+                            <p className="text-xs text-muted-foreground truncate">
+                              {app.coverLetter || "—"}
+                            </p>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`border-0 ${STATUS_COLORS[app.status]}`}
                             >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={ApplicationStatus.pending}>
-                                Pending
-                              </SelectItem>
-                              <SelectItem value={ApplicationStatus.shortlisted}>
-                                Shortlisted
-                              </SelectItem>
-                              <SelectItem value={ApplicationStatus.interviewed}>
-                                Interviewed
-                              </SelectItem>
-                              <SelectItem value={ApplicationStatus.rejected}>
-                                Rejected
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    ),
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </section>
+                              {app.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={app.status}
+                              onValueChange={(val) =>
+                                handleStatusChange(id, val)
+                              }
+                            >
+                              <SelectTrigger
+                                data-ocid={`admin.select.${idx + 1}`}
+                                className="h-8 text-xs w-36"
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={ApplicationStatus.pending}>
+                                  Pending
+                                </SelectItem>
+                                <SelectItem
+                                  value={ApplicationStatus.shortlisted}
+                                >
+                                  Shortlisted
+                                </SelectItem>
+                                <SelectItem
+                                  value={ApplicationStatus.interviewed}
+                                >
+                                  Interviewed
+                                </SelectItem>
+                                <SelectItem value={ApplicationStatus.rejected}>
+                                  Rejected
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </section>
+          </TabsContent>
 
-        {/* Applications Section */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">📋</span>
-            <h2 className="text-lg font-bold text-gray-900">
-              Job Applications
-            </h2>
-            <span
-              className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.12)",
-                color: "oklch(0.62 0.18 40)",
-              }}
-            >
-              {applications.length}
-            </span>
-          </div>
-          <div
-            className="rounded-xl border overflow-hidden"
-            style={{ borderColor: "oklch(0.88 0.003 260)" }}
-          >
-            {loadingApps ? (
-              <div data-ocid="admin.loading_state" className="p-8 text-center">
-                <Loader2
-                  className="animate-spin mx-auto mb-2"
-                  size={20}
-                  style={{ color: "oklch(0.62 0.18 40)" }}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Loading applications...
-                </p>
+          {/* ─── STAFF MANAGEMENT TAB ─── */}
+          <TabsContent value="staff-management">
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Users size={18} style={{ color: "oklch(0.62 0.18 40)" }} />
+                <h2 className="text-lg font-bold text-gray-900">
+                  Registered Users
+                </h2>
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    background: "oklch(0.62 0.18 40 / 0.12)",
+                    color: "oklch(0.62 0.18 40)",
+                  }}
+                >
+                  {users.length}
+                </span>
               </div>
-            ) : applications.length === 0 ? (
               <div
-                data-ocid="admin.empty_state"
-                className="p-8 text-center text-sm text-muted-foreground"
+                className="rounded-xl border overflow-hidden"
+                style={{ borderColor: "oklch(0.88 0.003 260)" }}
               >
-                No applications yet.
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
-                    <TableHead>Applicant</TableHead>
-                    <TableHead>Job Title</TableHead>
-                    <TableHead>Cover Letter</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Update Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {applications.map(([id, app], idx) => (
-                    <TableRow
-                      key={id.toString()}
-                      data-ocid={`admin.row.${idx + 1}`}
-                      style={{ background: "oklch(0.99 0.003 260)" }}
-                    >
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {shortPrincipal(app.applicant.toString())}
-                      </TableCell>
-                      <TableCell className="font-medium text-gray-900">
-                        {jobMap.get(app.jobId.toString()) ||
-                          `Job #${app.jobId}`}
-                      </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <p className="text-xs text-muted-foreground truncate">
-                          {app.coverLetter || "—"}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={`border-0 ${STATUS_COLORS[app.status]}`}
-                        >
-                          {app.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={app.status}
-                          onValueChange={(val) => handleStatusChange(id, val)}
-                        >
-                          <SelectTrigger
-                            data-ocid={`admin.select.${idx + 1}`}
-                            className="h-8 text-xs w-36"
+                {loadingUsers ? (
+                  <div
+                    data-ocid="admin.loading_state"
+                    className="p-8 text-center"
+                  >
+                    <Loader2
+                      className="animate-spin mx-auto mb-2"
+                      size={20}
+                      style={{ color: "oklch(0.62 0.18 40)" }}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Loading users...
+                    </p>
+                  </div>
+                ) : users.length === 0 ? (
+                  <div
+                    data-ocid="admin.empty_state"
+                    className="p-8 text-center text-sm text-muted-foreground"
+                  >
+                    No users registered yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Profile Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map(([principal, profile], idx) => {
+                        const pStr = principal.toString();
+                        const isStaff =
+                          profile.profileType ===
+                          Variant_staff_employer_candidate.staff;
+                        return (
+                          <TableRow
+                            key={pStr}
+                            data-ocid={`admin.row.${idx + 1}`}
+                            style={{ background: "oklch(0.99 0.003 260)" }}
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ApplicationStatus.pending}>
-                              Pending
-                            </SelectItem>
-                            <SelectItem value={ApplicationStatus.shortlisted}>
-                              Shortlisted
-                            </SelectItem>
-                            <SelectItem value={ApplicationStatus.interviewed}>
-                              Interviewed
-                            </SelectItem>
-                            <SelectItem value={ApplicationStatus.rejected}>
-                              Rejected
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-        </section>
+                            <TableCell className="font-medium text-gray-900">
+                              {profile.name || shortPrincipal(pStr)}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {profile.email || "—"}
+                            </TableCell>
+                            <TableCell>
+                              <span className="capitalize text-sm">
+                                {profile.profileType}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {isStaff ? (
+                                <Badge className="bg-green-100 text-green-700 border-0">
+                                  Staff
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-600 border-0">
+                                  User
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 flex-wrap">
+                                {isStaff ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    data-ocid={`admin.delete_button.${idx + 1}`}
+                                    onClick={() => handleRemoveStaff(pStr)}
+                                    disabled={removeStaff.isPending}
+                                    className="text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs"
+                                  >
+                                    Remove Staff
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    data-ocid={`admin.primary_button.${idx + 1}`}
+                                    onClick={() => handleAssignStaff(pStr)}
+                                    disabled={assignStaff.isPending}
+                                    className="h-7 text-xs text-white"
+                                    style={{
+                                      background: "oklch(0.62 0.18 40)",
+                                    }}
+                                  >
+                                    Add Staff
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  data-ocid={`admin.secondary_button.${idx + 1}`}
+                                  onClick={() => handleMakeAdmin(pStr)}
+                                  disabled={assignUserRole.isPending}
+                                  className="h-7 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                >
+                                  <ShieldCheck size={12} className="mr-1" />
+                                  Make Admin
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </section>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

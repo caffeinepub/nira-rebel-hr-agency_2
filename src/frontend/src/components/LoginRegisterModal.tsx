@@ -91,11 +91,13 @@ export default function LoginRegisterModal({
       await login();
       // Directly try to claim admin seed for the known admin email
       await trySeedAdmin();
+      queryClient.invalidateQueries({ queryKey: ["callerProfile"] });
       setLoginSuccess(true);
       setTimeout(() => handleClose(false), 1200);
     } catch (_err: any) {
       if (_err?.message === "User is already authenticated") {
         await trySeedAdmin();
+        queryClient.invalidateQueries({ queryKey: ["callerProfile"] });
         setLoginSuccess(true);
         setTimeout(() => handleClose(false), 1200);
       } else {
@@ -130,6 +132,7 @@ export default function LoginRegisterModal({
               : Variant_staff_employer_candidate.candidate,
         });
         queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
+        queryClient.invalidateQueries({ queryKey: ["callerProfile"] });
         // Try to claim admin seed using the registered email
         try {
           const granted = await actor.claimAdminSeed(regEmail.trim());
