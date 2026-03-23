@@ -57,7 +57,11 @@ const ADMIN_SEED_EMAIL = "ns244128@gmail.com";
 
 export default function AdminDashboard() {
   const { identity } = useInternetIdentity();
-  const isAuthenticated = !!identity;
+  // Must be a real (non-anonymous) authenticated identity
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+  const callerPrincipal = isAuthenticated
+    ? identity.getPrincipal().toString()
+    : null;
 
   const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
   const { data: users = [], isLoading: loadingUsers } = useListAllUsers();
@@ -77,20 +81,21 @@ export default function AdminDashboard() {
 
   const [seedEmail, setSeedEmail] = useState(ADMIN_SEED_EMAIL);
   const [seeding, setSeeding] = useState(false);
-  const [autoAttempted, setAutoAttempted] = useState(false);
+  const [autoAttempted, setAutoAttempted] = useState<string | null>(null);
 
   const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
 
-  // Auto-attempt seed ONLY when user is authenticated (logged in)
+  // Auto-attempt seed ONLY when user is authenticated with a real (non-anonymous) identity
   useEffect(() => {
     if (
       !isAdmin &&
       !checkingAdmin &&
-      !autoAttempted &&
+      autoAttempted !== callerPrincipal &&
       actor &&
-      isAuthenticated
+      isAuthenticated &&
+      callerPrincipal
     ) {
-      setAutoAttempted(true);
+      setAutoAttempted(callerPrincipal);
       setSeeding(true);
       actor
         .claimAdminSeed(ADMIN_SEED_EMAIL)
@@ -101,10 +106,13 @@ export default function AdminDashboard() {
             });
             queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
             setTimeout(() => window.location.reload(), 1500);
+          } else {
+            // Seed returned false -- user is authenticated but not the seed email
+            setSeeding(false);
           }
         })
         .catch(() => {
-          // ignore errors
+          // ignore errors silently
         })
         .finally(() => setSeeding(false));
     }
@@ -114,6 +122,7 @@ export default function AdminDashboard() {
     autoAttempted,
     actor,
     isAuthenticated,
+    callerPrincipal,
     queryClient,
   ]);
 
