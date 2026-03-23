@@ -1,5 +1,6 @@
 import {
   ApplicationStatus,
+  type DirectApplication,
   UserRole,
   Variant_staff_employer_candidate,
 } from "@/backend";
@@ -26,10 +27,12 @@ import {
   useAssignStaffRole,
   useIsAdmin,
   useListAllApplications,
+  useListAllDirectApplications,
   useListAllUsers,
   useListJobs,
   useRemoveStaffRole,
   useUpdateApplicationStatus,
+  useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, ShieldCheck, Users } from "lucide-react";
@@ -55,6 +58,9 @@ export default function AdminDashboard() {
   const { data: applications = [], isLoading: loadingApps } =
     useListAllApplications();
   const { data: jobs = [] } = useListJobs();
+  const { data: directApplications = [], isLoading: loadingDirectApps } =
+    useListAllDirectApplications();
+  const updateDirectStatus = useUpdateDirectApplicationStatus();
 
   const assignStaff = useAssignStaffRole();
   const removeStaff = useRemoveStaffRole();
@@ -293,7 +299,11 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           {[
             { label: "Total Users", value: users.length, icon: "👤" },
-            { label: "Applications", value: applications.length, icon: "📋" },
+            {
+              label: "Applications",
+              value: directApplications.length,
+              icon: "📋",
+            },
             {
               label: "Shortlisted",
               value: applications.filter(
@@ -442,6 +452,134 @@ export default function AdminDashboard() {
                       </TableRow>
                     );
                   })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </section>
+
+        {/* Direct Applications Section */}
+        <section className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">📝</span>
+            <h2 className="text-lg font-bold text-gray-900">
+              Direct Applications
+            </h2>
+            <span
+              className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
+              style={{
+                background: "oklch(0.62 0.18 40 / 0.12)",
+                color: "oklch(0.62 0.18 40)",
+              }}
+            >
+              {directApplications.length}
+            </span>
+          </div>
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: "oklch(0.88 0.003 260)" }}
+          >
+            {loadingDirectApps ? (
+              <div data-ocid="admin.loading_state" className="p-8 text-center">
+                <Loader2
+                  className="animate-spin mx-auto mb-2"
+                  size={20}
+                  style={{ color: "oklch(0.62 0.18 40)" }}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Loading applications...
+                </p>
+              </div>
+            ) : directApplications.length === 0 ? (
+              <div
+                data-ocid="admin.empty_state"
+                className="p-8 text-center text-sm text-muted-foreground"
+              >
+                No direct applications yet.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
+                    <TableHead className="text-black">#</TableHead>
+                    <TableHead className="text-black">Candidate Name</TableHead>
+                    <TableHead className="text-black">
+                      Job Applied For
+                    </TableHead>
+                    <TableHead className="text-black">Phone</TableHead>
+                    <TableHead className="text-black">Email</TableHead>
+                    <TableHead className="text-black">Status</TableHead>
+                    <TableHead className="text-black">Update Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {directApplications.map(
+                    ([id, app]: [bigint, DirectApplication], idx: number) => (
+                      <TableRow
+                        key={id.toString()}
+                        data-ocid={`admin.row.${idx + 1}`}
+                        style={{ background: "oklch(0.99 0.003 260)" }}
+                      >
+                        <TableCell className="text-black">{idx + 1}</TableCell>
+                        <TableCell className="font-medium text-black">
+                          {app.candidateName}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {app.jobTitle}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {app.phone || "—"}
+                        </TableCell>
+                        <TableCell className="text-black">
+                          {app.email || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={`border-0 ${STATUS_COLORS[app.status as ApplicationStatus]}`}
+                          >
+                            {app.status as string}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={app.status as string}
+                            onValueChange={(val) => {
+                              updateDirectStatus
+                                .mutateAsync({
+                                  id,
+                                  status: val as ApplicationStatus,
+                                })
+                                .then(() => toast.success("Status updated"))
+                                .catch(() =>
+                                  toast.error("Failed to update status"),
+                                );
+                            }}
+                          >
+                            <SelectTrigger
+                              data-ocid={`admin.select.${idx + 1}`}
+                              className="h-8 text-xs w-36"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={ApplicationStatus.pending}>
+                                Pending
+                              </SelectItem>
+                              <SelectItem value={ApplicationStatus.shortlisted}>
+                                Shortlisted
+                              </SelectItem>
+                              <SelectItem value={ApplicationStatus.interviewed}>
+                                Interviewed
+                              </SelectItem>
+                              <SelectItem value={ApplicationStatus.rejected}>
+                                Rejected
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ),
+                  )}
                 </TableBody>
               </Table>
             )}

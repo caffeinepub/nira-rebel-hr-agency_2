@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from "@/backend";
+import type { ApplicationStatus, DirectApplication } from "@/backend";
 import { useActor } from "@/hooks/useActor";
 import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -117,5 +117,75 @@ export function useIsUserStaff(user: Principal | null) {
       return actor.isUserStaff(user);
     },
     enabled: !!actor && !isFetching && !!user,
+  });
+}
+
+export function useListAllDirectApplications() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Array<[bigint, DirectApplication]>>({
+    queryKey: ["allDirectApplications"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listAllDirectApplications();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useSubmitDirectApplication() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      candidateName,
+      jobTitle,
+      phone,
+      email,
+    }: {
+      candidateName: string;
+      jobTitle: string;
+      phone: string;
+      email: string;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.submitDirectApplication(
+        candidateName,
+        jobTitle,
+        phone,
+        email,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["allDirectApplications"] });
+    },
+  });
+}
+
+export function useUpdateDirectApplicationStatus() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: { id: bigint; status: ApplicationStatus }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.updateDirectApplicationStatus(id, status);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["allDirectApplications"] });
+    },
+  });
+}
+
+export function useCallerProfile() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["callerProfile"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getCallerUserProfile();
+    },
+    enabled: !!actor && !isFetching,
   });
 }

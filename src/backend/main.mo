@@ -2,9 +2,11 @@ import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Text "mo:core/Text";
-
+import Time "mo:core/Time";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+
+
 
 actor {
   type Job = {
@@ -41,12 +43,23 @@ actor {
     details : Text;
   };
 
+  type DirectApplication = {
+    candidateName : Text;
+    jobTitle : Text;
+    phone : Text;
+    email : Text;
+    status : ApplicationStatus;
+    appliedAt : Int;
+  };
+
   // Integrate authorization component
   let accessControlState = AccessControl.initState();
+  var adminAssigned : Bool = false;
   include MixinAuthorization(accessControlState);
 
   let jobs = Map.empty<Nat, Job>();
   let applications = Map.empty<Nat, Application>();
+  let directApplications = Map.empty<Nat, DirectApplication>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let staffRoles = Map.empty<Principal, Bool>();
 
@@ -76,7 +89,7 @@ actor {
     // Already admin -- return true
     if (AccessControl.isAdmin(accessControlState, caller)) { return true };
     accessControlState.userRoles.add(caller, #admin);
-    accessControlState.adminAssigned := true;
+    adminAssigned := true;
     adminSeeded := true;
     true;
   };
@@ -242,5 +255,48 @@ actor {
       Runtime.trap("Unauthorized: Only admin can check staff status");
     };
     isStaff(user);
+  };
+
+  // DirecApplication (open to all, no auth required)
+  public shared ({ caller }) func submitDirectApplication(
+    candidateName : Text,
+    jobTitle : Text,
+    phone : Text,
+    email : Text,
+  ) : async Nat {
+    let applicationId = nextApplicationId;
+    let application : DirectApplication = {
+      candidateName;
+      jobTitle;
+      phone;
+      email;
+      status = #pending;
+      appliedAt = Time.now();
+    };
+    directApplications.add(applicationId, application);
+    nextApplicationId += 1;
+    applicationId;
+  };
+
+  // List all direct (admin or staff only)
+  public query ({ caller }) func listAllDirectApplications() : async [(Nat, DirectApplication)] {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only staff or admin can view direct applications");
+    };
+    directApplications.entries().toArray();
+  };
+
+  // Update direct (admin or staff only)
+  public shared ({ caller }) func updateDirectApplicationStatus(id : Nat, status : ApplicationStatus) : async () {
+    if (not isStaffOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only staff or admin can update direct application status");
+    };
+    switch (directApplications.get(id)) {
+      case (?application) {
+        let updatedApplication : DirectApplication = { application with status };
+        directApplications.add(id, updatedApplication);
+      };
+      case (null) { Runtime.trap("Direct application not found") };
+    };
   };
 };

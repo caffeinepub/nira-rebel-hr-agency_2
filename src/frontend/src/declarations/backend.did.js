@@ -43,6 +43,14 @@ export const Job = IDL.Record({
   'requirements' : IDL.Text,
   'location' : IDL.Text,
 });
+export const DirectApplication = IDL.Record({
+  'status' : ApplicationStatus,
+  'appliedAt' : IDL.Int,
+  'email' : IDL.Text,
+  'jobTitle' : IDL.Text,
+  'candidateName' : IDL.Text,
+  'phone' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -72,6 +80,11 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
       ['query'],
     ),
+  'listAllDirectApplications' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, DirectApplication))],
+      ['query'],
+    ),
   'listAllUsers' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
@@ -90,7 +103,17 @@ export const idlService = IDL.Service({
     ),
   'removeStaffRole' : IDL.Func([IDL.Principal], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'submitDirectApplication' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
   'updateApplicationStatus' : IDL.Func([IDL.Nat, ApplicationStatus], [], []),
+  'updateDirectApplicationStatus' : IDL.Func(
+      [IDL.Nat, ApplicationStatus],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -131,6 +154,14 @@ export const idlFactory = ({ IDL }) => {
     'requirements' : IDL.Text,
     'location' : IDL.Text,
   });
+  const DirectApplication = IDL.Record({
+    'status' : ApplicationStatus,
+    'appliedAt' : IDL.Int,
+    'email' : IDL.Text,
+    'jobTitle' : IDL.Text,
+    'candidateName' : IDL.Text,
+    'phone' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -160,6 +191,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
         ['query'],
       ),
+    'listAllDirectApplications' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, DirectApplication))],
+        ['query'],
+      ),
     'listAllUsers' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
@@ -178,7 +214,17 @@ export const idlFactory = ({ IDL }) => {
       ),
     'removeStaffRole' : IDL.Func([IDL.Principal], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'submitDirectApplication' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
     'updateApplicationStatus' : IDL.Func([IDL.Nat, ApplicationStatus], [], []),
+    'updateDirectApplicationStatus' : IDL.Func(
+        [IDL.Nat, ApplicationStatus],
+        [],
+        [],
+      ),
   });
 };
 

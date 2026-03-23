@@ -20,6 +20,14 @@ export type ApplicationStatus = { 'interviewed' : null } |
   { 'pending' : null } |
   { 'rejected' : null } |
   { 'shortlisted' : null };
+export interface DirectApplication {
+  'status' : ApplicationStatus,
+  'appliedAt' : bigint,
+  'email' : string,
+  'jobTitle' : string,
+  'candidateName' : string,
+  'phone' : string,
+}
 export interface Job {
   'title' : string,
   'salary' : number,
@@ -55,6 +63,10 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isUserStaff' : ActorMethod<[Principal], boolean>,
   'listAllApplications' : ActorMethod<[], Array<[bigint, Application]>>,
+  'listAllDirectApplications' : ActorMethod<
+    [],
+    Array<[bigint, DirectApplication]>
+  >,
   'listAllUsers' : ActorMethod<[], Array<[Principal, UserProfile]>>,
   'listApplicationsForJob' : ActorMethod<
     [bigint],
@@ -64,7 +76,15 @@ export interface _SERVICE {
   'listMyApplications' : ActorMethod<[], Array<[bigint, Application]>>,
   'removeStaffRole' : ActorMethod<[Principal], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'submitDirectApplication' : ActorMethod<
+    [string, string, string, string],
+    bigint
+  >,
   'updateApplicationStatus' : ActorMethod<
+    [bigint, ApplicationStatus],
+    undefined
+  >,
+  'updateDirectApplicationStatus' : ActorMethod<
     [bigint, ApplicationStatus],
     undefined
   >,

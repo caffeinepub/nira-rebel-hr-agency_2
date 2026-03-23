@@ -7,6 +7,14 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface DirectApplication {
+    status: ApplicationStatus;
+    appliedAt: bigint;
+    email: string;
+    jobTitle: string;
+    candidateName: string;
+    phone: string;
+}
 export interface Job {
     title: string;
     salary: number;
@@ -58,11 +66,14 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isUserStaff(user: Principal): Promise<boolean>;
     listAllApplications(): Promise<Array<[bigint, Application]>>;
+    listAllDirectApplications(): Promise<Array<[bigint, DirectApplication]>>;
     listAllUsers(): Promise<Array<[Principal, UserProfile]>>;
     listApplicationsForJob(jobId: bigint): Promise<Array<[bigint, Application]>>;
     listJobs(): Promise<Array<[bigint, Job]>>;
     listMyApplications(): Promise<Array<[bigint, Application]>>;
     removeStaffRole(user: Principal): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    submitDirectApplication(candidateName: string, jobTitle: string, phone: string, email: string): Promise<bigint>;
     updateApplicationStatus(applicationId: bigint, status: ApplicationStatus): Promise<void>;
+    updateDirectApplicationStatus(id: bigint, status: ApplicationStatus): Promise<void>;
 }
