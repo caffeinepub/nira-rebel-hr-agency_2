@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useActor } from "@/hooks/useActor";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   useAssignStaffRole,
   useIsAdmin,
@@ -35,7 +36,7 @@ import {
   useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, Loader2, LogIn, ShieldCheck, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -53,6 +54,9 @@ function shortPrincipal(p: string) {
 const ADMIN_SEED_EMAIL = "ns244128@gmail.com";
 
 export default function AdminDashboard() {
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity;
+
   const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
   const { data: users = [], isLoading: loadingUsers } = useListAllUsers();
   const { data: applications = [], isLoading: loadingApps } =
@@ -74,9 +78,15 @@ export default function AdminDashboard() {
 
   const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
 
-  // Auto-attempt seed when access denied screen is shown
+  // Auto-attempt seed ONLY when user is authenticated (logged in)
   useEffect(() => {
-    if (!isAdmin && !checkingAdmin && !autoAttempted && actor) {
+    if (
+      !isAdmin &&
+      !checkingAdmin &&
+      !autoAttempted &&
+      actor &&
+      isAuthenticated
+    ) {
       setAutoAttempted(true);
       setSeeding(true);
       actor
@@ -95,7 +105,14 @@ export default function AdminDashboard() {
         })
         .finally(() => setSeeding(false));
     }
-  }, [isAdmin, checkingAdmin, autoAttempted, actor, queryClient]);
+  }, [
+    isAdmin,
+    checkingAdmin,
+    autoAttempted,
+    actor,
+    isAuthenticated,
+    queryClient,
+  ]);
 
   const handleClaimSeed = async () => {
     if (!actor || !seedEmail.trim()) return;
@@ -171,6 +188,47 @@ export default function AdminDashboard() {
     );
   }
 
+  // Not logged in at all -- show login prompt
+  if (!isAuthenticated) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "oklch(0.99 0.003 260)" }}
+      >
+        <div
+          data-ocid="admin.error_state"
+          className="text-center p-8 max-w-sm w-full"
+        >
+          <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
+            <LogIn size={28} className="text-orange-400" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Login Required
+          </h2>
+          <p className="text-sm text-gray-600 mb-6">
+            You must be logged in with your Internet Identity before accessing
+            the Admin Dashboard.
+          </p>
+          <p className="text-xs text-gray-500 mb-6">
+            Step 1: Click the Login button in the top-right navbar.
+            <br />
+            Step 2: Authenticate with Internet Identity.
+            <br />
+            Step 3: Come back to /admin — access will be granted automatically.
+          </p>
+          <a
+            href="/"
+            data-ocid="admin.link"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-medium text-white"
+            style={{ background: "oklch(0.62 0.18 40)" }}
+          >
+            <ArrowLeft size={14} /> Go to Home & Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <div
@@ -188,7 +246,7 @@ export default function AdminDashboard() {
             Access Denied
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            You need admin privileges to access this dashboard.
+            You are logged in, but your account does not have admin privileges.
           </p>
 
           {seeding ? (
@@ -214,7 +272,7 @@ export default function AdminDashboard() {
                 onChange={(e) => setSeedEmail(e.target.value)}
                 placeholder="Enter your admin email"
                 data-ocid="admin.input"
-                className="text-sm"
+                className="text-sm text-black"
               />
               <Button
                 onClick={handleClaimSeed}

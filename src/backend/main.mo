@@ -67,7 +67,6 @@ actor {
   var nextApplicationId : Nat = 1;
 
   let SEED_ADMIN_EMAIL : Text = "ns244128@gmail.com";
-  // Kept for upgrade compatibility -- no longer used functionally
   var adminSeeded : Bool = false;
 
   func isStaff(caller : Principal) : Bool {
@@ -81,10 +80,11 @@ actor {
     AccessControl.isAdmin(accessControlState, caller) or isStaff(caller);
   };
 
-  // Admin seeding: grants admin to any caller whose email matches the seed email.
-  // No profile required -- caller just passes their email directly.
-  // Can be called multiple times safely (idempotent).
+  // Admin seeding: grants admin to any authenticated caller whose email matches.
+  // Anonymous principals are explicitly rejected.
   public shared ({ caller }) func claimAdminSeed(email : Text) : async Bool {
+    // Reject anonymous callers -- they must be logged in first
+    if (caller.isAnonymous()) { return false };
     if (not Text.equal(email, SEED_ADMIN_EMAIL)) { return false };
     // Already admin -- return true
     if (AccessControl.isAdmin(accessControlState, caller)) { return true };
@@ -257,8 +257,8 @@ actor {
     isStaff(user);
   };
 
-  // DirecApplication (open to all, no auth required)
-  public shared ({ caller }) func submitDirectApplication(
+  // DirectApplication (open to all, no auth required)
+  public shared func submitDirectApplication(
     candidateName : Text,
     jobTitle : Text,
     phone : Text,
