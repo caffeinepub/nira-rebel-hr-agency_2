@@ -14,8 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useCallerRole, useIsAdmin } from "@/hooks/useQueries";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -32,7 +34,9 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import AdminDashboard from "./components/AdminDashboard";
 import LoginRegisterModal from "./components/LoginRegisterModal";
+import StaffPortal from "./components/StaffPortal";
 
 const NAV_LINKS = [
   { label: "Home", href: "#" },
@@ -181,9 +185,15 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
 
+  const [currentPage, setCurrentPage] = useState<string>(
+    window.location.pathname,
+  );
   const { identity, clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity;
+  const { data: isAdmin } = useIsAdmin();
+  const { data: callerRole } = useCallerRole();
+  const isStaffOrAdmin = callerRole === "admin" || callerRole === "user";
   const principalStr = identity?.getPrincipal().toString() ?? "";
   // Show short form of principal as display name
   const shortId = principalStr
@@ -215,14 +225,30 @@ export default function App() {
     setForm(initialForm);
   };
 
+  // Simple routing
+  if (currentPage === "/admin")
+    return (
+      <>
+        <AdminDashboard />
+        <Toaster />
+      </>
+    );
+  if (currentPage === "/staff")
+    return (
+      <>
+        <StaffPortal />
+        <Toaster />
+      </>
+    );
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
       {/* HEADER */}
       <header
         className="sticky top-0 z-50 w-full"
         style={{
-          background: "oklch(0.14 0.005 260)",
-          borderBottom: "1px solid oklch(0.25 0.006 260)",
+          background: "oklch(0.99 0.003 260)",
+          borderBottom: "1px solid oklch(0.88 0.003 260)",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
@@ -272,6 +298,36 @@ export default function App() {
                 </a>
               ))}
             </nav>
+            {/* Dashboard Links */}
+            <div className="hidden lg:flex items-center gap-1">
+              {isStaffOrAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage("/staff");
+                    window.history.pushState({}, "", "/staff");
+                  }}
+                  data-ocid="nav.link"
+                  className="px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors rounded"
+                >
+                  Staff Portal
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage("/admin");
+                    window.history.pushState({}, "", "/admin");
+                  }}
+                  data-ocid="nav.link"
+                  className="px-3 py-2 text-xs font-medium rounded font-semibold"
+                  style={{ color: "oklch(0.62 0.18 40)" }}
+                >
+                  Admin Dashboard
+                </button>
+              )}
+            </div>
 
             {/* Right Actions */}
             <div className="hidden lg:flex items-center gap-2">
@@ -279,7 +335,7 @@ export default function App() {
                 <>
                   <div
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-                    style={{ color: "oklch(0.82 0.008 260)" }}
+                    style={{ color: "oklch(0.20 0.008 260)" }}
                   >
                     <User size={14} style={{ color: "oklch(0.62 0.18 40)" }} />
                     <span className="text-xs font-medium">{shortId}</span>
@@ -288,10 +344,10 @@ export default function App() {
                     type="button"
                     onClick={handleLogout}
                     data-ocid="nav.secondary_button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded transition-colors hover:text-white"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded transition-colors hover:text-gray-900"
                     style={{
-                      borderColor: "oklch(0.35 0.006 260)",
-                      color: "oklch(0.65 0.008 260)",
+                      borderColor: "oklch(0.78 0.003 260)",
+                      color: "oklch(0.40 0.008 260)",
                     }}
                   >
                     <LogOut size={13} />
@@ -303,10 +359,10 @@ export default function App() {
                   type="button"
                   onClick={openLogin}
                   data-ocid="nav.secondary_button"
-                  className="px-4 py-2 text-sm font-medium border rounded transition-colors hover:text-white"
+                  className="px-4 py-2 text-sm font-medium border rounded transition-colors hover:text-gray-700"
                   style={{
-                    borderColor: "oklch(0.45 0.006 260)",
-                    color: "oklch(0.9 0.005 260)",
+                    borderColor: "oklch(0.75 0.003 260)",
+                    color: "oklch(0.18 0.008 260)",
                   }}
                 >
                   Login / Register
@@ -342,8 +398,8 @@ export default function App() {
           <div
             className="lg:hidden border-t"
             style={{
-              background: "oklch(0.14 0.005 260)",
-              borderColor: "oklch(0.25 0.006 260)",
+              background: "oklch(0.99 0.003 260)",
+              borderColor: "oklch(0.82 0.003 260)",
             }}
           >
             <nav className="px-4 py-3 flex flex-col gap-1">
@@ -365,7 +421,7 @@ export default function App() {
                   <>
                     <div
                       className="flex items-center gap-2 px-3 py-2 text-sm"
-                      style={{ color: "oklch(0.72 0.008 260)" }}
+                      style={{ color: "oklch(0.30 0.008 260)" }}
                     >
                       <User
                         size={14}
@@ -382,8 +438,8 @@ export default function App() {
                       data-ocid="nav.secondary_button"
                       className="flex items-center justify-center gap-2 px-4 py-2 text-sm border rounded"
                       style={{
-                        borderColor: "oklch(0.35 0.006 260)",
-                        color: "oklch(0.65 0.008 260)",
+                        borderColor: "oklch(0.78 0.003 260)",
+                        color: "oklch(0.40 0.008 260)",
                       }}
                     >
                       <LogOut size={13} />
@@ -400,8 +456,8 @@ export default function App() {
                     data-ocid="nav.secondary_button"
                     className="px-4 py-2 text-sm border rounded"
                     style={{
-                      borderColor: "oklch(0.45 0.006 260)",
-                      color: "oklch(0.9 0.005 260)",
+                      borderColor: "oklch(0.75 0.003 260)",
+                      color: "oklch(0.18 0.008 260)",
                     }}
                   >
                     Login / Register
@@ -449,7 +505,7 @@ export default function App() {
             </h1>
             <p
               className="text-base md:text-lg mb-8"
-              style={{ color: "oklch(0.82 0.005 260)" }}
+              style={{ color: "oklch(0.92 0.005 260)" }}
             >
               Your trusted recruitment partner for jobs at SBI Bank, PNB Bank,
               Axis Bank, Hitachi, Metro, Blinkit and more.
@@ -468,8 +524,8 @@ export default function App() {
             <div
               className="mt-10 p-5 rounded-lg"
               style={{
-                background: "rgba(15,17,19,0.85)",
-                border: "1px solid oklch(0.25 0.006 260)",
+                background: "rgba(255,255,255,0.95)",
+                border: "1px solid oklch(0.88 0.003 260)",
               }}
             >
               <p
@@ -484,9 +540,9 @@ export default function App() {
                     data-ocid="hero.select"
                     className="w-full px-3 py-2.5 text-sm rounded appearance-none pr-8"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      border: "1px solid oklch(0.28 0.006 260)",
-                      color: "oklch(0.65 0.008 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      border: "1px solid oklch(0.85 0.003 260)",
+                      color: "oklch(0.40 0.008 260)",
                     }}
                   >
                     <option value="">Job Role</option>
@@ -499,7 +555,7 @@ export default function App() {
                   <ChevronDown
                     size={14}
                     className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: "oklch(0.55 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   />
                 </div>
                 <div className="flex-1 relative">
@@ -507,9 +563,9 @@ export default function App() {
                     data-ocid="hero.select"
                     className="w-full px-3 py-2.5 text-sm rounded appearance-none pr-8"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      border: "1px solid oklch(0.28 0.006 260)",
-                      color: "oklch(0.65 0.008 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      border: "1px solid oklch(0.85 0.003 260)",
+                      color: "oklch(0.40 0.008 260)",
                     }}
                   >
                     <option value="">Industry</option>
@@ -521,7 +577,7 @@ export default function App() {
                   <ChevronDown
                     size={14}
                     className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: "oklch(0.55 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   />
                 </div>
                 <div className="flex-1 relative">
@@ -529,9 +585,9 @@ export default function App() {
                     data-ocid="hero.select"
                     className="w-full px-3 py-2.5 text-sm rounded appearance-none pr-8"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      border: "1px solid oklch(0.28 0.006 260)",
-                      color: "oklch(0.65 0.008 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      border: "1px solid oklch(0.85 0.003 260)",
+                      color: "oklch(0.40 0.008 260)",
                     }}
                   >
                     <option value="">Location</option>
@@ -543,7 +599,7 @@ export default function App() {
                   <ChevronDown
                     size={14}
                     className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: "oklch(0.55 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   />
                 </div>
                 <button
@@ -564,7 +620,7 @@ export default function App() {
       <section
         id="jobs"
         className="py-16"
-        style={{ background: "oklch(0.14 0.005 260)" }}
+        style={{ background: "oklch(0.99 0.003 260)" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
@@ -577,7 +633,7 @@ export default function App() {
             >
               Featured Jobs
             </span>
-            <h2 className="font-serif text-3xl font-bold text-white">
+            <h2 className="font-serif text-3xl font-bold text-gray-900">
               TOP CLIENTS &amp; JOBS
             </h2>
           </div>
@@ -590,7 +646,7 @@ export default function App() {
                 className="flex items-center justify-center px-5 py-3 rounded-lg min-w-[90px]"
                 style={{
                   background: client.bg,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                 }}
               >
                 <span
@@ -611,22 +667,22 @@ export default function App() {
                 data-ocid={`jobs.item.${i + 1}`}
                 className="p-4 rounded-lg flex flex-col gap-2 transition-transform hover:-translate-y-0.5"
                 style={{
-                  background: "oklch(0.20 0.005 260)",
-                  border: "1px solid oklch(0.25 0.006 260)",
+                  background: "oklch(0.96 0.003 260)",
+                  border: "1px solid oklch(0.88 0.003 260)",
                 }}
               >
-                <h3 className="font-sans font-semibold text-sm text-white leading-tight">
+                <h3 className="font-sans font-semibold text-sm text-gray-900 leading-tight">
                   {job.title}
                 </h3>
                 <p
                   className="text-xs"
-                  style={{ color: "oklch(0.65 0.008 260)" }}
+                  style={{ color: "oklch(0.40 0.008 260)" }}
                 >
                   {job.company}
                 </p>
                 <div
                   className="flex items-center gap-1 text-xs"
-                  style={{ color: "oklch(0.55 0.008 260)" }}
+                  style={{ color: "oklch(0.45 0.008 260)" }}
                 >
                   <MapPin size={11} />
                   {job.location}
@@ -650,7 +706,7 @@ export default function App() {
       <section
         id="candidates"
         className="py-16"
-        style={{ background: "oklch(0.12 0.004 260)" }}
+        style={{ background: "oklch(0.97 0.003 260)" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
@@ -663,7 +719,7 @@ export default function App() {
             >
               What We Do
             </span>
-            <h2 className="font-serif text-3xl font-bold text-white">
+            <h2 className="font-serif text-3xl font-bold text-gray-900">
               OUR EXPERTISE
             </h2>
           </div>
@@ -674,17 +730,17 @@ export default function App() {
                 data-ocid={`expertise.item.${i + 1}`}
                 className="p-6 rounded-lg text-center"
                 style={{
-                  background: "oklch(0.17 0.005 260)",
-                  border: "1px solid oklch(0.25 0.006 260)",
+                  background: "oklch(0.99 0.003 260)",
+                  border: "1px solid oklch(0.88 0.003 260)",
                 }}
               >
                 <div className="text-3xl mb-4">{item.icon}</div>
-                <h3 className="font-sans font-bold text-sm tracking-wide uppercase mb-2 text-white">
+                <h3 className="font-sans font-bold text-sm tracking-wide uppercase mb-2 text-gray-900">
                   {item.title}
                 </h3>
                 <p
                   className="text-xs leading-relaxed"
-                  style={{ color: "oklch(0.65 0.008 260)" }}
+                  style={{ color: "oklch(0.40 0.008 260)" }}
                 >
                   {item.desc}
                 </p>
@@ -697,7 +753,7 @@ export default function App() {
       {/* TESTIMONIALS */}
       <section
         className="py-16"
-        style={{ background: "oklch(0.14 0.005 260)" }}
+        style={{ background: "oklch(0.99 0.003 260)" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
@@ -710,7 +766,7 @@ export default function App() {
             >
               Success Stories
             </span>
-            <h2 className="font-serif text-3xl font-bold text-white">
+            <h2 className="font-serif text-3xl font-bold text-gray-900">
               CANDIDATE TESTIMONIALS
             </h2>
           </div>
@@ -721,8 +777,8 @@ export default function App() {
                 data-ocid={`testimonials.item.${i + 1}`}
                 className="p-6 rounded-lg"
                 style={{
-                  background: "oklch(0.20 0.005 260)",
-                  border: "1px solid oklch(0.25 0.006 260)",
+                  background: "oklch(0.96 0.003 260)",
+                  border: "1px solid oklch(0.88 0.003 260)",
                 }}
               >
                 <div className="flex gap-1 mb-4">
@@ -737,7 +793,7 @@ export default function App() {
                 </div>
                 <p
                   className="text-sm leading-relaxed mb-5"
-                  style={{ color: "oklch(0.72 0.008 260)" }}
+                  style={{ color: "oklch(0.30 0.008 260)" }}
                 >
                   &ldquo;{t.text}&rdquo;
                 </p>
@@ -749,10 +805,12 @@ export default function App() {
                     {t.initials}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-white">{t.name}</p>
+                    <p className="font-semibold text-sm text-gray-900">
+                      {t.name}
+                    </p>
                     <p
                       className="text-xs"
-                      style={{ color: "oklch(0.55 0.008 260)" }}
+                      style={{ color: "oklch(0.45 0.008 260)" }}
                     >
                       {t.role}
                     </p>
@@ -768,7 +826,7 @@ export default function App() {
       <section
         id="blog"
         className="py-16"
-        style={{ background: "oklch(0.12 0.004 260)" }}
+        style={{ background: "oklch(0.97 0.003 260)" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
@@ -781,7 +839,7 @@ export default function App() {
             >
               Knowledge Hub
             </span>
-            <h2 className="font-serif text-3xl font-bold text-white">
+            <h2 className="font-serif text-3xl font-bold text-gray-900">
               RECENT INDUSTRY INSIGHTS
             </h2>
           </div>
@@ -792,8 +850,8 @@ export default function App() {
                 data-ocid={`blog.item.${i + 1}`}
                 className="rounded-lg overflow-hidden transition-transform hover:-translate-y-1"
                 style={{
-                  background: "oklch(0.17 0.005 260)",
-                  border: "1px solid oklch(0.25 0.006 260)",
+                  background: "oklch(0.99 0.003 260)",
+                  border: "1px solid oklch(0.88 0.003 260)",
                 }}
               >
                 <div className="aspect-video overflow-hidden">
@@ -804,12 +862,12 @@ export default function App() {
                   />
                 </div>
                 <div className="p-5">
-                  <h3 className="font-serif font-bold text-base text-white mb-2 leading-snug">
+                  <h3 className="font-serif font-bold text-base text-gray-900 mb-2 leading-snug">
                     {post.title}
                   </h3>
                   <p
                     className="text-xs leading-relaxed mb-4"
-                    style={{ color: "oklch(0.65 0.008 260)" }}
+                    style={{ color: "oklch(0.40 0.008 260)" }}
                   >
                     {post.excerpt}
                   </p>
@@ -831,8 +889,8 @@ export default function App() {
       {/* FOOTER */}
       <footer
         style={{
-          background: "oklch(0.11 0.004 260)",
-          borderTop: "1px solid oklch(0.22 0.005 260)",
+          background: "oklch(0.97 0.003 260)",
+          borderTop: "1px solid oklch(0.88 0.003 260)",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
@@ -860,7 +918,7 @@ export default function App() {
               </div>
               <p
                 className="text-xs leading-relaxed"
-                style={{ color: "oklch(0.55 0.008 260)" }}
+                style={{ color: "oklch(0.45 0.008 260)" }}
               >
                 Professional HR recruitment agency in New Delhi, connecting
                 talent with India's top employers.
@@ -869,7 +927,7 @@ export default function App() {
 
             {/* Column 2: Contact */}
             <div>
-              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-white">
+              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-gray-800">
                 Contact Us
               </h4>
               <div className="flex flex-col gap-3">
@@ -881,7 +939,7 @@ export default function App() {
                   />
                   <p
                     className="text-xs leading-relaxed"
-                    style={{ color: "oklch(0.55 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   >
                     38, Central Ave, Pocket C, Raju Park, Sangam Vihar, New
                     Delhi 110080
@@ -892,7 +950,7 @@ export default function App() {
                   <a
                     href="tel:+919891331853"
                     className="text-xs"
-                    style={{ color: "oklch(0.55 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   >
                     +91-9891331853
                   </a>
@@ -902,7 +960,7 @@ export default function App() {
                   <a
                     href="mailto:rebelhrjobs1451@gmail.com"
                     className="text-xs break-all"
-                    style={{ color: "oklch(0.55 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   >
                     rebelhrjobs1451@gmail.com
                   </a>
@@ -912,7 +970,7 @@ export default function App() {
 
             {/* Column 3: Quick Links */}
             <div>
-              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-white">
+              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-gray-800">
                 Quick Links
               </h4>
               <ul className="flex flex-col gap-2">
@@ -922,7 +980,7 @@ export default function App() {
                       href="#top"
                       data-ocid="footer.link"
                       className="text-xs transition-colors hover:text-white"
-                      style={{ color: "oklch(0.55 0.008 260)" }}
+                      style={{ color: "oklch(0.45 0.008 260)" }}
                     >
                       {link}
                     </a>
@@ -933,7 +991,7 @@ export default function App() {
 
             {/* Column 4: Social */}
             <div>
-              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-white">
+              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-gray-800">
                 Social Media
               </h4>
               <div className="flex flex-col gap-3">
@@ -943,7 +1001,7 @@ export default function App() {
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
                   className="flex items-center gap-2 text-xs transition-colors hover:text-white"
-                  style={{ color: "oklch(0.55 0.008 260)" }}
+                  style={{ color: "oklch(0.45 0.008 260)" }}
                 >
                   <Instagram
                     size={15}
@@ -957,7 +1015,7 @@ export default function App() {
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
                   className="flex items-center gap-2 text-xs transition-colors hover:text-white"
-                  style={{ color: "oklch(0.55 0.008 260)" }}
+                  style={{ color: "oklch(0.45 0.008 260)" }}
                 >
                   <Linkedin
                     size={15}
@@ -971,7 +1029,7 @@ export default function App() {
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
                   className="flex items-center gap-2 text-xs transition-colors hover:text-white"
-                  style={{ color: "oklch(0.55 0.008 260)" }}
+                  style={{ color: "oklch(0.45 0.008 260)" }}
                 >
                   <Facebook
                     size={15}
@@ -985,20 +1043,20 @@ export default function App() {
         </div>
 
         {/* Copyright */}
-        <div style={{ borderTop: "1px solid oklch(0.20 0.005 260)" }}>
+        <div style={{ borderTop: "1px solid oklch(0.88 0.003 260)" }}>
           <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-xs" style={{ color: "oklch(0.45 0.006 260)" }}>
+            <p className="text-xs" style={{ color: "oklch(0.75 0.003 260)" }}>
               &copy; {new Date().getFullYear()} Nira Rebel HR Agency Pvt Ltd.
               All rights reserved.
             </p>
-            <p className="text-xs" style={{ color: "oklch(0.40 0.006 260)" }}>
+            <p className="text-xs" style={{ color: "oklch(0.50 0.006 260)" }}>
               Built with ❤️ using{" "}
               <a
                 href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline"
-                style={{ color: "oklch(0.55 0.008 260)" }}
+                style={{ color: "oklch(0.45 0.008 260)" }}
               >
                 caffeine.ai
               </a>
@@ -1012,13 +1070,13 @@ export default function App() {
         <DialogContent
           className="max-w-lg max-h-[90vh] overflow-y-auto"
           style={{
-            background: "oklch(0.17 0.005 260)",
-            border: "1px solid oklch(0.28 0.006 260)",
+            background: "oklch(0.99 0.003 260)",
+            border: "1px solid oklch(0.85 0.003 260)",
           }}
           data-ocid="apply.modal"
         >
           <DialogHeader>
-            <DialogTitle className="font-serif text-white text-xl">
+            <DialogTitle className="font-serif text-gray-900 text-xl">
               Apply Now
             </DialogTitle>
           </DialogHeader>
@@ -1031,10 +1089,10 @@ export default function App() {
               >
                 ✅
               </div>
-              <h3 className="font-serif text-xl text-white mb-2">
+              <h3 className="font-serif text-xl text-gray-900 mb-2">
                 Application Submitted!
               </h3>
-              <p className="text-sm" style={{ color: "oklch(0.65 0.008 260)" }}>
+              <p className="text-sm" style={{ color: "oklch(0.40 0.008 260)" }}>
                 Thank you for applying. Our team will contact you shortly.
               </p>
               <button
@@ -1066,8 +1124,8 @@ export default function App() {
                     data-ocid="apply.input"
                     className="text-sm"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      borderColor: "oklch(0.28 0.006 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      borderColor: "oklch(0.82 0.003 260)",
                       color: "white",
                     }}
                   />
@@ -1088,8 +1146,8 @@ export default function App() {
                     data-ocid="apply.input"
                     className="text-sm"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      borderColor: "oklch(0.28 0.006 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      borderColor: "oklch(0.82 0.003 260)",
                       color: "white",
                     }}
                   />
@@ -1112,8 +1170,8 @@ export default function App() {
                   data-ocid="apply.input"
                   className="text-sm"
                   style={{
-                    background: "oklch(0.20 0.005 260)",
-                    borderColor: "oklch(0.28 0.006 260)",
+                    background: "oklch(0.96 0.003 260)",
+                    borderColor: "oklch(0.82 0.003 260)",
                     color: "white",
                   }}
                 />
@@ -1138,8 +1196,8 @@ export default function App() {
                     data-ocid="apply.input"
                     className="text-sm"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      borderColor: "oklch(0.28 0.006 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      borderColor: "oklch(0.82 0.003 260)",
                       color: "white",
                     }}
                   />
@@ -1154,9 +1212,9 @@ export default function App() {
                     data-ocid="apply.select"
                     className="w-full px-3 py-2 text-sm rounded"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      border: "1px solid oklch(0.28 0.006 260)",
-                      color: form.gender ? "white" : "oklch(0.55 0.008 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      border: "1px solid oklch(0.85 0.003 260)",
+                      color: form.gender ? "white" : "oklch(0.45 0.008 260)",
                     }}
                   >
                     <option value="">Select</option>
@@ -1180,11 +1238,11 @@ export default function App() {
                     data-ocid="apply.select"
                     className="w-full px-3 py-2 text-sm rounded"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      border: "1px solid oklch(0.28 0.006 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      border: "1px solid oklch(0.85 0.003 260)",
                       color: form.qualification
                         ? "white"
-                        : "oklch(0.55 0.008 260)",
+                        : "oklch(0.45 0.008 260)",
                     }}
                   >
                     <option value="">Select</option>
@@ -1206,11 +1264,11 @@ export default function App() {
                     data-ocid="apply.select"
                     className="w-full px-3 py-2 text-sm rounded"
                     style={{
-                      background: "oklch(0.20 0.005 260)",
-                      border: "1px solid oklch(0.28 0.006 260)",
+                      background: "oklch(0.96 0.003 260)",
+                      border: "1px solid oklch(0.85 0.003 260)",
                       color: form.experience
                         ? "white"
-                        : "oklch(0.55 0.008 260)",
+                        : "oklch(0.45 0.008 260)",
                     }}
                   >
                     <option value="">Select</option>
@@ -1238,8 +1296,8 @@ export default function App() {
                   data-ocid="apply.input"
                   className="text-sm"
                   style={{
-                    background: "oklch(0.20 0.005 260)",
-                    borderColor: "oklch(0.28 0.006 260)",
+                    background: "oklch(0.96 0.003 260)",
+                    borderColor: "oklch(0.82 0.003 260)",
                     color: "white",
                   }}
                 />
@@ -1255,9 +1313,9 @@ export default function App() {
                   data-ocid="apply.select"
                   className="w-full px-3 py-2 text-sm rounded"
                   style={{
-                    background: "oklch(0.20 0.005 260)",
-                    border: "1px solid oklch(0.28 0.006 260)",
-                    color: form.location ? "white" : "oklch(0.55 0.008 260)",
+                    background: "oklch(0.96 0.003 260)",
+                    border: "1px solid oklch(0.85 0.003 260)",
+                    color: form.location ? "white" : "oklch(0.45 0.008 260)",
                   }}
                 >
                   <option value="">Select Location</option>
@@ -1285,8 +1343,8 @@ export default function App() {
                   data-ocid="apply.textarea"
                   className="text-sm resize-none"
                   style={{
-                    background: "oklch(0.20 0.005 260)",
-                    borderColor: "oklch(0.28 0.006 260)",
+                    background: "oklch(0.96 0.003 260)",
+                    borderColor: "oklch(0.82 0.003 260)",
                     color: "white",
                   }}
                 />
@@ -1299,8 +1357,8 @@ export default function App() {
                   data-ocid="apply.cancel_button"
                   className="flex-1 py-2.5 text-sm font-medium rounded border transition-colors"
                   style={{
-                    borderColor: "oklch(0.35 0.006 260)",
-                    color: "oklch(0.65 0.008 260)",
+                    borderColor: "oklch(0.78 0.003 260)",
+                    color: "oklch(0.40 0.008 260)",
                   }}
                 >
                   Cancel

@@ -11,10 +11,15 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface Application {
+  'status' : ApplicationStatus,
   'applicant' : Principal,
   'jobId' : bigint,
   'coverLetter' : string,
 }
+export type ApplicationStatus = { 'interviewed' : null } |
+  { 'pending' : null } |
+  { 'rejected' : null } |
+  { 'shortlisted' : null };
 export interface Job {
   'title' : string,
   'salary' : number,
@@ -27,7 +32,8 @@ export interface UserProfile {
   'name' : string,
   'email' : string,
   'details' : string,
-  'profileType' : { 'employer' : null } |
+  'profileType' : { 'staff' : null } |
+    { 'employer' : null } |
     { 'candidate' : null },
 }
 export type UserRole = { 'admin' : null } |
@@ -37,6 +43,8 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'applyForJob' : ActorMethod<[bigint, string], bigint>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'assignStaffRole' : ActorMethod<[Principal], undefined>,
+  'claimAdminSeed' : ActorMethod<[string], boolean>,
   'createJob' : ActorMethod<[string, string, string, number, string], bigint>,
   'deleteJob' : ActorMethod<[bigint], undefined>,
   'getApplication' : ActorMethod<[bigint], [] | [Application]>,
@@ -45,13 +53,21 @@ export interface _SERVICE {
   'getJob' : ActorMethod<[bigint], [] | [Job]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isUserStaff' : ActorMethod<[Principal], boolean>,
+  'listAllApplications' : ActorMethod<[], Array<[bigint, Application]>>,
+  'listAllUsers' : ActorMethod<[], Array<[Principal, UserProfile]>>,
   'listApplicationsForJob' : ActorMethod<
     [bigint],
     Array<[bigint, Application]>
   >,
   'listJobs' : ActorMethod<[], Array<[bigint, Job]>>,
   'listMyApplications' : ActorMethod<[], Array<[bigint, Application]>>,
+  'removeStaffRole' : ActorMethod<[Principal], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'updateApplicationStatus' : ActorMethod<
+    [bigint, ApplicationStatus],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -14,7 +14,8 @@ import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, LogIn, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Variant_employer_candidate } from "../backend";
+import { toast } from "sonner";
+import { Variant_staff_employer_candidate } from "../backend";
 
 interface Props {
   open: boolean;
@@ -73,6 +74,21 @@ export default function LoginRegisterModal({
     setLoginError("");
     try {
       await login();
+      // Try to claim admin seed using stored profile email
+      if (actor) {
+        try {
+          const profile = await actor.getCallerUserProfile();
+          if (profile?.email) {
+            const granted = await actor.claimAdminSeed(profile.email);
+            if (granted) {
+              toast.success("Admin access granted!", { duration: 3000 });
+              queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+            }
+          }
+        } catch (_seedErr) {
+          // ignore seed errors
+        }
+      }
       setLoginSuccess(true);
       setTimeout(() => handleClose(false), 1200);
     } catch (_err: any) {
@@ -107,10 +123,20 @@ export default function LoginRegisterModal({
           details: "",
           profileType:
             regRole === "employer"
-              ? Variant_employer_candidate.employer
-              : Variant_employer_candidate.candidate,
+              ? Variant_staff_employer_candidate.employer
+              : Variant_staff_employer_candidate.candidate,
         });
         queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
+        // Try to claim admin seed
+        try {
+          const granted = await actor.claimAdminSeed(regEmail.trim());
+          if (granted) {
+            toast.success("Admin access granted!", { duration: 3000 });
+            queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+          }
+        } catch (_seedErr) {
+          // ignore seed errors
+        }
       }
       setRegSuccess(true);
       setTimeout(() => handleClose(false), 1200);
@@ -122,8 +148,8 @@ export default function LoginRegisterModal({
   };
 
   const inputStyle = {
-    background: "oklch(0.20 0.005 260)",
-    borderColor: "oklch(0.30 0.006 260)",
+    background: "oklch(0.96 0.003 260)",
+    borderColor: "oklch(0.82 0.003 260)",
     color: "white",
   };
 
@@ -132,13 +158,13 @@ export default function LoginRegisterModal({
       <DialogContent
         className="max-w-md"
         style={{
-          background: "oklch(0.17 0.005 260)",
-          border: "1px solid oklch(0.28 0.006 260)",
+          background: "oklch(0.99 0.003 260)",
+          border: "1px solid oklch(0.85 0.003 260)",
         }}
         data-ocid="auth.modal"
       >
         <DialogHeader>
-          <DialogTitle className="font-serif text-white text-xl text-center">
+          <DialogTitle className="font-serif text-gray-900 text-xl text-center">
             Welcome to Nira Rebel
           </DialogTitle>
         </DialogHeader>
@@ -147,13 +173,13 @@ export default function LoginRegisterModal({
           <TabsList
             className="w-full mb-6"
             style={{
-              background: "oklch(0.13 0.005 260)",
-              border: "1px solid oklch(0.25 0.006 260)",
+              background: "oklch(0.97 0.003 260)",
+              border: "1px solid oklch(0.85 0.003 260)",
             }}
           >
             <TabsTrigger
               value="login"
-              className="flex-1 text-sm data-[state=active]:text-white"
+              className="flex-1 text-sm data-[state=active]:text-gray-900"
               style={{}}
               data-ocid="auth.tab"
             >
@@ -161,7 +187,7 @@ export default function LoginRegisterModal({
             </TabsTrigger>
             <TabsTrigger
               value="register"
-              className="flex-1 text-sm data-[state=active]:text-white"
+              className="flex-1 text-sm data-[state=active]:text-gray-900"
               data-ocid="auth.tab"
             >
               Register
@@ -178,12 +204,12 @@ export default function LoginRegisterModal({
                 >
                   ✅
                 </div>
-                <h3 className="font-serif text-lg text-white mb-1">
+                <h3 className="font-serif text-lg text-gray-900 mb-1">
                   You're logged in!
                 </h3>
                 <p
                   className="text-sm"
-                  style={{ color: "oklch(0.65 0.008 260)" }}
+                  style={{ color: "oklch(0.45 0.008 260)" }}
                 >
                   Welcome back to Nira Rebel HR Agency.
                 </p>
@@ -193,13 +219,13 @@ export default function LoginRegisterModal({
                 <div
                   className="rounded-lg p-4 text-center"
                   style={{
-                    background: "oklch(0.13 0.005 260)",
-                    border: "1px solid oklch(0.25 0.006 260)",
+                    background: "oklch(0.97 0.003 260)",
+                    border: "1px solid oklch(0.85 0.003 260)",
                   }}
                 >
                   <p
                     className="text-xs leading-relaxed"
-                    style={{ color: "oklch(0.65 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   >
                     Click the button below to securely log in using Internet
                     Identity — a fast, password-free authentication system.
@@ -239,7 +265,7 @@ export default function LoginRegisterModal({
 
                 <p
                   className="text-xs text-center"
-                  style={{ color: "oklch(0.45 0.006 260)" }}
+                  style={{ color: "oklch(0.50 0.006 260)" }}
                 >
                   No account needed — your identity is secured on-chain.
                 </p>
@@ -257,12 +283,12 @@ export default function LoginRegisterModal({
                 >
                   🎉
                 </div>
-                <h3 className="font-serif text-lg text-white mb-1">
+                <h3 className="font-serif text-lg text-gray-900 mb-1">
                   Account Created!
                 </h3>
                 <p
                   className="text-sm"
-                  style={{ color: "oklch(0.65 0.008 260)" }}
+                  style={{ color: "oklch(0.45 0.008 260)" }}
                 >
                   Your profile has been saved successfully.
                 </p>
@@ -272,13 +298,13 @@ export default function LoginRegisterModal({
                 <div
                   className="rounded-lg p-3"
                   style={{
-                    background: "oklch(0.13 0.005 260)",
-                    border: "1px solid oklch(0.25 0.006 260)",
+                    background: "oklch(0.97 0.003 260)",
+                    border: "1px solid oklch(0.85 0.003 260)",
                   }}
                 >
                   <p
                     className="text-xs"
-                    style={{ color: "oklch(0.65 0.008 260)" }}
+                    style={{ color: "oklch(0.45 0.008 260)" }}
                   >
                     Create your profile to track your applications and get
                     personalised job recommendations.
@@ -289,7 +315,7 @@ export default function LoginRegisterModal({
                   <Label
                     htmlFor="reg-name"
                     className="text-xs mb-1.5 block"
-                    style={{ color: "oklch(0.72 0.008 260)" }}
+                    style={{ color: "oklch(0.30 0.008 260)" }}
                   >
                     Full Name *
                   </Label>
@@ -309,7 +335,7 @@ export default function LoginRegisterModal({
                   <Label
                     htmlFor="reg-email"
                     className="text-xs mb-1.5 block"
-                    style={{ color: "oklch(0.72 0.008 260)" }}
+                    style={{ color: "oklch(0.30 0.008 260)" }}
                   >
                     Email Address *
                   </Label>
@@ -329,7 +355,7 @@ export default function LoginRegisterModal({
                 <div>
                   <Label
                     className="text-xs mb-2 block"
-                    style={{ color: "oklch(0.72 0.008 260)" }}
+                    style={{ color: "oklch(0.30 0.008 260)" }}
                   >
                     I am a…
                   </Label>
@@ -349,8 +375,8 @@ export default function LoginRegisterModal({
                                 border: "1px solid oklch(0.62 0.18 40)",
                               }
                             : {
-                                background: "oklch(0.20 0.005 260)",
-                                color: "oklch(0.65 0.008 260)",
+                                background: "oklch(0.96 0.003 260)",
+                                color: "oklch(0.45 0.008 260)",
                                 border: "1px solid oklch(0.30 0.006 260)",
                               }
                         }
@@ -393,7 +419,7 @@ export default function LoginRegisterModal({
 
                 <p
                   className="text-xs text-center"
-                  style={{ color: "oklch(0.45 0.006 260)" }}
+                  style={{ color: "oklch(0.50 0.006 260)" }}
                 >
                   You'll be prompted to authenticate securely via Internet
                   Identity.

@@ -98,6 +98,7 @@ export interface Job {
     location: string;
 }
 export interface Application {
+    status: ApplicationStatus;
     applicant: Principal;
     jobId: bigint;
     coverLetter: string;
@@ -106,14 +107,21 @@ export interface UserProfile {
     name: string;
     email: string;
     details: string;
-    profileType: Variant_employer_candidate;
+    profileType: Variant_staff_employer_candidate;
+}
+export enum ApplicationStatus {
+    interviewed = "interviewed",
+    pending = "pending",
+    rejected = "rejected",
+    shortlisted = "shortlisted"
 }
 export enum UserRole {
     admin = "admin",
     user = "user",
     guest = "guest"
 }
-export enum Variant_employer_candidate {
+export enum Variant_staff_employer_candidate {
+    staff = "staff",
     employer = "employer",
     candidate = "candidate"
 }
@@ -121,6 +129,8 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     applyForJob(jobId: bigint, coverLetter: string): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    assignStaffRole(user: Principal): Promise<void>;
+    claimAdminSeed(email: string): Promise<boolean>;
     createJob(title: string, description: string, requirements: string, salary: number, location: string): Promise<bigint>;
     deleteJob(jobId: bigint): Promise<void>;
     getApplication(applicationId: bigint): Promise<Application | null>;
@@ -129,12 +139,17 @@ export interface backendInterface {
     getJob(jobId: bigint): Promise<Job | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    isUserStaff(user: Principal): Promise<boolean>;
+    listAllApplications(): Promise<Array<[bigint, Application]>>;
+    listAllUsers(): Promise<Array<[Principal, UserProfile]>>;
     listApplicationsForJob(jobId: bigint): Promise<Array<[bigint, Application]>>;
     listJobs(): Promise<Array<[bigint, Job]>>;
     listMyApplications(): Promise<Array<[bigint, Application]>>;
+    removeStaffRole(user: Principal): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    updateApplicationStatus(applicationId: bigint, status: ApplicationStatus): Promise<void>;
 }
-import type { Application as _Application, Job as _Job, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { Application as _Application, ApplicationStatus as _ApplicationStatus, Job as _Job, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -176,6 +191,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async assignStaffRole(arg0: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.assignStaffRole(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.assignStaffRole(arg0);
+            return result;
+        }
+    }
+    async claimAdminSeed(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimAdminSeed(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimAdminSeed(arg0);
             return result;
         }
     }
@@ -225,56 +268,56 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n8(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n8(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async getJob(arg0: bigint): Promise<Job | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getJob(arg0);
-                return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n14(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getJob(arg0);
-            return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n14(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -291,18 +334,60 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async listApplicationsForJob(arg0: bigint): Promise<Array<[bigint, Application]>> {
+    async isUserStaff(arg0: Principal): Promise<boolean> {
         if (this.processError) {
             try {
-                const result = await this.actor.listApplicationsForJob(arg0);
+                const result = await this.actor.isUserStaff(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.listApplicationsForJob(arg0);
+            const result = await this.actor.isUserStaff(arg0);
             return result;
+        }
+    }
+    async listAllApplications(): Promise<Array<[bigint, Application]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listAllApplications();
+                return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listAllApplications();
+            return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async listAllUsers(): Promise<Array<[Principal, UserProfile]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listAllUsers();
+                return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listAllUsers();
+            return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async listApplicationsForJob(arg0: bigint): Promise<Array<[bigint, Application]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listApplicationsForJob(arg0);
+                return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listApplicationsForJob(arg0);
+            return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
         }
     }
     async listJobs(): Promise<Array<[bigint, Job]>> {
@@ -323,51 +408,87 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.listMyApplications();
-                return result;
+                return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.listMyApplications();
-            return result;
+            return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
         }
     }
-    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
+    async removeStaffRole(arg0: Principal): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n11(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.removeStaffRole(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n11(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.removeStaffRole(arg0);
+            return result;
+        }
+    }
+    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n19(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.saveCallerUserProfile(to_candid_UserProfile_n19(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
+    async updateApplicationStatus(arg0: bigint, arg1: ApplicationStatus): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateApplicationStatus(arg0, to_candid_ApplicationStatus_n22(this._uploadFile, this._downloadFile, arg1));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateApplicationStatus(arg0, to_candid_ApplicationStatus_n22(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
 }
-function from_candid_UserProfile_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserProfile): UserProfile {
-    return from_candid_record_n6(_uploadFile, _downloadFile, value);
+function from_candid_ApplicationStatus_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ApplicationStatus): ApplicationStatus {
+    return from_candid_variant_n7(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n9(_uploadFile, _downloadFile, value);
+function from_candid_Application_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Application): Application {
+    return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Job]): Job | null {
+function from_candid_UserProfile_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserProfile): UserProfile {
+    return from_candid_record_n10(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Job]): Job | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Application]): Application | null {
-    return value.length === 0 ? null : value[0];
+    return value.length === 0 ? null : from_candid_Application_n4(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
-    return value.length === 0 ? null : from_candid_UserProfile_n5(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+    return value.length === 0 ? null : from_candid_UserProfile_n9(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_record_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     name: string;
     email: string;
     details: string;
     profileType: {
+        staff: null;
+    } | {
         employer: null;
     } | {
         candidate: null;
@@ -376,23 +497,55 @@ function from_candid_record_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint
     name: string;
     email: string;
     details: string;
-    profileType: Variant_employer_candidate;
+    profileType: Variant_staff_employer_candidate;
 } {
     return {
         name: value.name,
         email: value.email,
         details: value.details,
-        profileType: from_candid_variant_n7(_uploadFile, _downloadFile, value.profileType)
+        profileType: from_candid_variant_n11(_uploadFile, _downloadFile, value.profileType)
     };
 }
-function from_candid_variant_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status: _ApplicationStatus;
+    applicant: Principal;
+    jobId: bigint;
+    coverLetter: string;
+}): {
+    status: ApplicationStatus;
+    applicant: Principal;
+    jobId: bigint;
+    coverLetter: string;
+} {
+    return {
+        status: from_candid_ApplicationStatus_n6(_uploadFile, _downloadFile, value.status),
+        applicant: value.applicant,
+        jobId: value.jobId,
+        coverLetter: value.coverLetter
+    };
+}
+function from_candid_tuple_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [bigint, _Application]): [bigint, Application] {
+    return [
+        value[0],
+        from_candid_Application_n4(_uploadFile, _downloadFile, value[1])
+    ];
+}
+function from_candid_tuple_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, _UserProfile]): [Principal, UserProfile] {
+    return [
+        value[0],
+        from_candid_UserProfile_n9(_uploadFile, _downloadFile, value[1])
+    ];
+}
+function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    staff: null;
+} | {
     employer: null;
 } | {
     candidate: null;
-}): Variant_employer_candidate {
-    return "employer" in value ? Variant_employer_candidate.employer : "candidate" in value ? Variant_employer_candidate.candidate : value;
+}): Variant_staff_employer_candidate {
+    return "staff" in value ? Variant_staff_employer_candidate.staff : "employer" in value ? Variant_staff_employer_candidate.employer : "candidate" in value ? Variant_staff_employer_candidate.candidate : value;
 }
-function from_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -401,22 +554,44 @@ function from_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function to_candid_UserProfile_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): _UserProfile {
-    return to_candid_record_n12(_uploadFile, _downloadFile, value);
+function from_candid_variant_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    interviewed: null;
+} | {
+    pending: null;
+} | {
+    rejected: null;
+} | {
+    shortlisted: null;
+}): ApplicationStatus {
+    return "interviewed" in value ? ApplicationStatus.interviewed : "pending" in value ? ApplicationStatus.pending : "rejected" in value ? ApplicationStatus.rejected : "shortlisted" in value ? ApplicationStatus.shortlisted : value;
+}
+function from_candid_vec_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[bigint, _Application]>): Array<[bigint, Application]> {
+    return value.map((x)=>from_candid_tuple_n16(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, _UserProfile]>): Array<[Principal, UserProfile]> {
+    return value.map((x)=>from_candid_tuple_n18(_uploadFile, _downloadFile, x));
+}
+function to_candid_ApplicationStatus_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApplicationStatus): _ApplicationStatus {
+    return to_candid_variant_n23(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserProfile_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): _UserProfile {
+    return to_candid_record_n20(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     name: string;
     email: string;
     details: string;
-    profileType: Variant_employer_candidate;
+    profileType: Variant_staff_employer_candidate;
 }): {
     name: string;
     email: string;
     details: string;
     profileType: {
+        staff: null;
+    } | {
         employer: null;
     } | {
         candidate: null;
@@ -426,19 +601,8 @@ function to_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         name: value.name,
         email: value.email,
         details: value.details,
-        profileType: to_candid_variant_n13(_uploadFile, _downloadFile, value.profileType)
+        profileType: to_candid_variant_n21(_uploadFile, _downloadFile, value.profileType)
     };
-}
-function to_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_employer_candidate): {
-    employer: null;
-} | {
-    candidate: null;
-} {
-    return value == Variant_employer_candidate.employer ? {
-        employer: null
-    } : value == Variant_employer_candidate.candidate ? {
-        candidate: null
-    } : value;
 }
 function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
@@ -453,6 +617,40 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         user: null
     } : value == UserRole.guest ? {
         guest: null
+    } : value;
+}
+function to_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_staff_employer_candidate): {
+    staff: null;
+} | {
+    employer: null;
+} | {
+    candidate: null;
+} {
+    return value == Variant_staff_employer_candidate.staff ? {
+        staff: null
+    } : value == Variant_staff_employer_candidate.employer ? {
+        employer: null
+    } : value == Variant_staff_employer_candidate.candidate ? {
+        candidate: null
+    } : value;
+}
+function to_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApplicationStatus): {
+    interviewed: null;
+} | {
+    pending: null;
+} | {
+    rejected: null;
+} | {
+    shortlisted: null;
+} {
+    return value == ApplicationStatus.interviewed ? {
+        interviewed: null
+    } : value == ApplicationStatus.pending ? {
+        pending: null
+    } : value == ApplicationStatus.rejected ? {
+        rejected: null
+    } : value == ApplicationStatus.shortlisted ? {
+        shortlisted: null
     } : value;
 }
 export interface CreateActorOptions {

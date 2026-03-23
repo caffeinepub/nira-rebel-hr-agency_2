@@ -1,29 +1,21 @@
 # Nira Rebel HR Agency
 
 ## Current State
-The site is a fully built React frontend with a sticky nav, hero, jobs, expertise, testimonials, blog, and footer. The nav has a 'Login / Register' button that currently does nothing. The backend is an empty Motoko actor.
+Full site is live with light theme, admin dashboard, staff portal, and role-based access control using the authorization component.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Authorization component (already selected) wired into the app
-- Login modal with email/password form
-- Register modal with email/password (+ name) form
-- Post-login success state: user stays on page, sees a welcome/success message in the nav
-- Logout option when user is logged in
+- Admin seeding: a backend function `claimAdminSeed(email)` that checks if the caller's email matches `ns244128@gmail.com` and, if so, promotes the caller to admin role. This is idempotent and safe to call on every login.
+- Frontend: after every successful login or registration, call `claimAdminSeed` with the user's email. If it succeeds and the user is now admin, show a brief success notice.
 
 ### Modify
-- 'Login / Register' button in desktop nav and mobile menu to open the auth modal
-- Nav right actions: show user name + logout button when authenticated
+- Nothing else changes.
 
 ### Remove
-- Nothing removed
+- Nothing.
 
 ## Implementation Plan
-1. Wire up the authorization component hooks (useAuth, login, register, logout) from the Caffeine auth bindings
-2. Add a LoginRegisterModal component with tab switching between Login and Register forms
-3. Login form: email + password fields, submit calls login(), shows success state
-4. Register form: name + email + password fields, submit calls register()
-5. Update nav 'Login / Register' button to open the modal
-6. When authenticated: show user display name and a Logout button in nav instead
-7. Show a brief success/welcome banner or update nav immediately after login
+1. Add `claimAdminSeed(email: Text): async Bool` to backend -- returns true if admin was granted.
+2. After login/register in the frontend auth flow, call `claimAdminSeed` with the user's email.
+3. Refresh the user role after the call so the UI reflects admin status immediately.

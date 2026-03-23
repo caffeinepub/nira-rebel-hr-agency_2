@@ -13,7 +13,14 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const ApplicationStatus = IDL.Variant({
+  'interviewed' : IDL.Null,
+  'pending' : IDL.Null,
+  'rejected' : IDL.Null,
+  'shortlisted' : IDL.Null,
+});
 export const Application = IDL.Record({
+  'status' : ApplicationStatus,
   'applicant' : IDL.Principal,
   'jobId' : IDL.Nat,
   'coverLetter' : IDL.Text,
@@ -23,6 +30,7 @@ export const UserProfile = IDL.Record({
   'email' : IDL.Text,
   'details' : IDL.Text,
   'profileType' : IDL.Variant({
+    'staff' : IDL.Null,
     'employer' : IDL.Null,
     'candidate' : IDL.Null,
   }),
@@ -40,6 +48,8 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'applyForJob' : IDL.Func([IDL.Nat, IDL.Text], [IDL.Nat], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignStaffRole' : IDL.Func([IDL.Principal], [], []),
+  'claimAdminSeed' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'createJob' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
       [IDL.Nat],
@@ -56,6 +66,17 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isUserStaff' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+  'listAllApplications' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
+      ['query'],
+    ),
+  'listAllUsers' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
+      ['query'],
+    ),
   'listApplicationsForJob' : IDL.Func(
       [IDL.Nat],
       [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
@@ -67,7 +88,9 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
       ['query'],
     ),
+  'removeStaffRole' : IDL.Func([IDL.Principal], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'updateApplicationStatus' : IDL.Func([IDL.Nat, ApplicationStatus], [], []),
 });
 
 export const idlInitArgs = [];
@@ -78,7 +101,14 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const ApplicationStatus = IDL.Variant({
+    'interviewed' : IDL.Null,
+    'pending' : IDL.Null,
+    'rejected' : IDL.Null,
+    'shortlisted' : IDL.Null,
+  });
   const Application = IDL.Record({
+    'status' : ApplicationStatus,
     'applicant' : IDL.Principal,
     'jobId' : IDL.Nat,
     'coverLetter' : IDL.Text,
@@ -88,6 +118,7 @@ export const idlFactory = ({ IDL }) => {
     'email' : IDL.Text,
     'details' : IDL.Text,
     'profileType' : IDL.Variant({
+      'staff' : IDL.Null,
       'employer' : IDL.Null,
       'candidate' : IDL.Null,
     }),
@@ -105,6 +136,8 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'applyForJob' : IDL.Func([IDL.Nat, IDL.Text], [IDL.Nat], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignStaffRole' : IDL.Func([IDL.Principal], [], []),
+    'claimAdminSeed' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'createJob' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
         [IDL.Nat],
@@ -121,6 +154,17 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isUserStaff' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+    'listAllApplications' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
+        ['query'],
+      ),
+    'listAllUsers' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, UserProfile))],
+        ['query'],
+      ),
     'listApplicationsForJob' : IDL.Func(
         [IDL.Nat],
         [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
@@ -132,7 +176,9 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
         ['query'],
       ),
+    'removeStaffRole' : IDL.Func([IDL.Principal], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'updateApplicationStatus' : IDL.Func([IDL.Nat, ApplicationStatus], [], []),
   });
 };
 
