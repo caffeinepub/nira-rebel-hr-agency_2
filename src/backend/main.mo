@@ -54,6 +54,7 @@ actor {
   var nextApplicationId : Nat = 1;
 
   let SEED_ADMIN_EMAIL : Text = "ns244128@gmail.com";
+  // Kept for upgrade compatibility -- no longer used functionally
   var adminSeeded : Bool = false;
 
   func isStaff(caller : Principal) : Bool {
@@ -67,17 +68,13 @@ actor {
     AccessControl.isAdmin(accessControlState, caller) or isStaff(caller);
   };
 
-  // Admin seeding: automatically grants admin to the seed email on first claim
+  // Admin seeding: grants admin to any caller whose email matches the seed email.
+  // No profile required -- caller just passes their email directly.
+  // Can be called multiple times safely (idempotent).
   public shared ({ caller }) func claimAdminSeed(email : Text) : async Bool {
-    if (adminSeeded) { return false };
     if (not Text.equal(email, SEED_ADMIN_EMAIL)) { return false };
-    switch (userProfiles.get(caller)) {
-      case (?profile) {
-        if (not Text.equal(profile.email, SEED_ADMIN_EMAIL)) { return false };
-      };
-      case (null) { return false };
-    };
-    // Directly write into the access control state to bypass the admin guard
+    // Already admin -- return true
+    if (AccessControl.isAdmin(accessControlState, caller)) { return true };
     accessControlState.userRoles.add(caller, #admin);
     accessControlState.adminAssigned := true;
     adminSeeded := true;

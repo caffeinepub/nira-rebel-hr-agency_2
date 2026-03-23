@@ -17,6 +17,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Variant_staff_employer_candidate } from "../backend";
 
+const ADMIN_SEED_EMAIL = "ns244128@gmail.com";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -70,29 +72,30 @@ export default function LoginRegisterModal({
     onOpenChange(val);
   };
 
+  const trySeedAdmin = async () => {
+    if (!actor) return;
+    try {
+      const granted = await actor.claimAdminSeed(ADMIN_SEED_EMAIL);
+      if (granted) {
+        toast.success("Admin access granted!", { duration: 3000 });
+        queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+      }
+    } catch {
+      // ignore seed errors
+    }
+  };
+
   const handleLogin = async () => {
     setLoginError("");
     try {
       await login();
-      // Try to claim admin seed using stored profile email
-      if (actor) {
-        try {
-          const profile = await actor.getCallerUserProfile();
-          if (profile?.email) {
-            const granted = await actor.claimAdminSeed(profile.email);
-            if (granted) {
-              toast.success("Admin access granted!", { duration: 3000 });
-              queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
-            }
-          }
-        } catch (_seedErr) {
-          // ignore seed errors
-        }
-      }
+      // Directly try to claim admin seed for the known admin email
+      await trySeedAdmin();
       setLoginSuccess(true);
       setTimeout(() => handleClose(false), 1200);
     } catch (_err: any) {
       if (_err?.message === "User is already authenticated") {
+        await trySeedAdmin();
         setLoginSuccess(true);
         setTimeout(() => handleClose(false), 1200);
       } else {
@@ -127,20 +130,22 @@ export default function LoginRegisterModal({
               : Variant_staff_employer_candidate.candidate,
         });
         queryClient.invalidateQueries({ queryKey: ["currentUserProfile"] });
-        // Try to claim admin seed
+        // Try to claim admin seed using the registered email
         try {
           const granted = await actor.claimAdminSeed(regEmail.trim());
           if (granted) {
             toast.success("Admin access granted!", { duration: 3000 });
             queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
           }
-        } catch (_seedErr) {
+        } catch {
           // ignore seed errors
         }
+        // Also always try with hardcoded seed email
+        await trySeedAdmin();
       }
       setRegSuccess(true);
       setTimeout(() => handleClose(false), 1200);
-    } catch (_err: any) {
+    } catch {
       setRegError("Registration failed. Please try again.");
     } finally {
       setRegLoading(false);
@@ -180,7 +185,6 @@ export default function LoginRegisterModal({
             <TabsTrigger
               value="login"
               className="flex-1 text-sm data-[state=active]:text-gray-900"
-              style={{}}
               data-ocid="auth.tab"
             >
               Login

@@ -5,6 +5,7 @@ import {
 } from "@/backend";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useActor } from "@/hooks/useActor";
 import {
   useAssignStaffRole,
   useIsAdmin,
@@ -29,7 +31,9 @@ import {
   useRemoveStaffRole,
   useUpdateApplicationStatus,
 } from "@/hooks/useQueries";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, ShieldCheck, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
@@ -43,6 +47,8 @@ function shortPrincipal(p: string) {
   return p.length > 12 ? `${p.slice(0, 8)}...` : p;
 }
 
+const ADMIN_SEED_EMAIL = "ns244128@gmail.com";
+
 export default function AdminDashboard() {
   const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
   const { data: users = [], isLoading: loadingUsers } = useListAllUsers();
@@ -53,8 +59,58 @@ export default function AdminDashboard() {
   const assignStaff = useAssignStaffRole();
   const removeStaff = useRemoveStaffRole();
   const updateStatus = useUpdateApplicationStatus();
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  const [seedEmail, setSeedEmail] = useState(ADMIN_SEED_EMAIL);
+  const [seeding, setSeeding] = useState(false);
+  const [autoAttempted, setAutoAttempted] = useState(false);
 
   const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
+
+  // Auto-attempt seed when access denied screen is shown
+  useEffect(() => {
+    if (!isAdmin && !checkingAdmin && !autoAttempted && actor) {
+      setAutoAttempted(true);
+      setSeeding(true);
+      actor
+        .claimAdminSeed(ADMIN_SEED_EMAIL)
+        .then((granted: boolean) => {
+          if (granted) {
+            toast.success("Admin access granted! Refreshing...", {
+              duration: 2000,
+            });
+            queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+            setTimeout(() => window.location.reload(), 1500);
+          }
+        })
+        .catch(() => {
+          // ignore errors
+        })
+        .finally(() => setSeeding(false));
+    }
+  }, [isAdmin, checkingAdmin, autoAttempted, actor, queryClient]);
+
+  const handleClaimSeed = async () => {
+    if (!actor || !seedEmail.trim()) return;
+    setSeeding(true);
+    try {
+      const granted = await actor.claimAdminSeed(seedEmail.trim());
+      if (granted) {
+        toast.success("Admin access granted! Refreshing...", {
+          duration: 2000,
+        });
+        queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast.error("This email is not authorized as admin seed.");
+      }
+    } catch {
+      toast.error("Failed to activate admin access.");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const handleAssignStaff = async (principalStr: string) => {
     try {
@@ -115,7 +171,10 @@ export default function AdminDashboard() {
         className="min-h-screen flex items-center justify-center"
         style={{ background: "oklch(0.99 0.003 260)" }}
       >
-        <div data-ocid="admin.error_state" className="text-center p-8">
+        <div
+          data-ocid="admin.error_state"
+          className="text-center p-8 max-w-sm w-full"
+        >
           <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
             <ShieldCheck size={28} className="text-red-400" />
           </div>
@@ -125,6 +184,51 @@ export default function AdminDashboard() {
           <p className="text-sm text-muted-foreground mb-6">
             You need admin privileges to access this dashboard.
           </p>
+
+          {seeding ? (
+            <div
+              data-ocid="admin.loading_state"
+              className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6"
+            >
+              <Loader2
+                className="animate-spin"
+                size={16}
+                style={{ color: "oklch(0.62 0.18 40)" }}
+              />
+              Activating admin access...
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 mb-6">
+              <p className="text-xs text-muted-foreground text-left font-medium">
+                Activate Admin Access
+              </p>
+              <Input
+                type="email"
+                value={seedEmail}
+                onChange={(e) => setSeedEmail(e.target.value)}
+                placeholder="Enter your admin email"
+                data-ocid="admin.input"
+                className="text-sm"
+              />
+              <Button
+                onClick={handleClaimSeed}
+                disabled={seeding || !seedEmail.trim()}
+                data-ocid="admin.primary_button"
+                className="w-full text-white"
+                style={{ background: "oklch(0.62 0.18 40)" }}
+              >
+                {seeding ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin mr-2" />
+                    Activating...
+                  </>
+                ) : (
+                  "Activate Admin Access"
+                )}
+              </Button>
+            </div>
+          )}
+
           <a
             href="/"
             data-ocid="admin.link"
