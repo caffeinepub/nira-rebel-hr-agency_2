@@ -39,10 +39,28 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AdminDashboard from "./components/AdminDashboard";
 import LoginRegisterModal from "./components/LoginRegisterModal";
 import StaffPortal from "./components/StaffPortal";
+
+function useCountUp(target: number, duration = 2000): number {
+  const [count, setCount] = useState(0);
+  const frameRef = useRef<number>(0);
+  useEffect(() => {
+    const start = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      setCount(Math.round(eased * target));
+      if (progress < 1) frameRef.current = requestAnimationFrame(animate);
+    };
+    frameRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameRef.current);
+  }, [target, duration]);
+  return count;
+}
 
 const NAV_LINKS = [
   { label: "Home", href: "#" },
@@ -195,6 +213,8 @@ export default function App() {
     window.location.pathname,
   );
   const { identity, clear } = useInternetIdentity();
+  const candidatesCount = useCountUp(10000);
+  const placementsCount = useCountUp(5000);
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity;
   const { data: isAdmin } = useIsAdmin();
@@ -574,7 +594,7 @@ export default function App() {
                     className="text-3xl font-black"
                     style={{ color: "oklch(0.62 0.18 40)" }}
                   >
-                    10,000+
+                    {candidatesCount.toLocaleString()}+
                   </p>
                   <p
                     className="text-xs mt-1"
@@ -592,7 +612,7 @@ export default function App() {
                     className="text-3xl font-black"
                     style={{ color: "oklch(0.62 0.18 40)" }}
                   >
-                    5,000+
+                    {placementsCount.toLocaleString()}+
                   </p>
                   <p
                     className="text-xs mt-1"
