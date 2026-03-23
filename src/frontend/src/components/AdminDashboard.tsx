@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
+  useAddPreApprovedStaffEmail,
   useAssignStaffRole,
   useAssignUserRole,
   useIsAdmin,
@@ -33,12 +34,22 @@ import {
   useListAllDirectApplications,
   useListAllUsers,
   useListJobs,
+  useListPreApprovedStaffEmails,
+  useRemovePreApprovedStaffEmail,
   useRemoveStaffRole,
   useUpdateApplicationStatus,
   useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, LogIn, ShieldCheck, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  LogIn,
+  Mail,
+  ShieldCheck,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -72,6 +83,12 @@ export default function AdminDashboard() {
     useListAllDirectApplications();
   const updateDirectStatus = useUpdateDirectApplicationStatus();
 
+  // Pre-approved staff email hooks
+  const { data: preApprovedEmails = [], isLoading: loadingEmails } =
+    useListPreApprovedStaffEmails();
+  const addPreApprovedStaffEmail = useAddPreApprovedStaffEmail();
+  const removePreApprovedStaffEmail = useRemovePreApprovedStaffEmail();
+
   const assignStaff = useAssignStaffRole();
   const removeStaff = useRemoveStaffRole();
   const assignUserRole = useAssignUserRole();
@@ -82,6 +99,7 @@ export default function AdminDashboard() {
   const [seedEmail, setSeedEmail] = useState(ADMIN_SEED_EMAIL);
   const [seeding, setSeeding] = useState(false);
   const [autoAttempted, setAutoAttempted] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
 
@@ -189,6 +207,27 @@ export default function AdminDashboard() {
       toast.success("Status updated");
     } catch {
       toast.error("Failed to update status");
+    }
+  };
+
+  const handleAddInviteEmail = async () => {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    try {
+      await addPreApprovedStaffEmail.mutateAsync(email);
+      setInviteEmail("");
+      toast.success("Staff email added");
+    } catch {
+      toast.error("Failed to add staff email");
+    }
+  };
+
+  const handleRemoveInviteEmail = async (email: string) => {
+    try {
+      await removePreApprovedStaffEmail.mutateAsync(email);
+      toast.success("Email removed");
+    } catch {
+      toast.error("Failed to remove email");
     }
   };
 
@@ -390,11 +429,6 @@ export default function AdminDashboard() {
               value="overview"
               data-ocid="admin.tab"
               className="px-6 text-sm font-medium data-[state=active]:text-white"
-              style={
-                {
-                  // active state handled via CSS var override below
-                }
-              }
             >
               Overview
             </TabsTrigger>
@@ -724,6 +758,116 @@ export default function AdminDashboard() {
 
           {/* ─── STAFF MANAGEMENT TAB ─── */}
           <TabsContent value="staff-management">
+            {/* ── Invite Staff by Email ── */}
+            <section className="mb-8">
+              <div
+                className="rounded-xl border p-6"
+                style={{
+                  background: "oklch(0.99 0.003 260)",
+                  borderColor: "oklch(0.88 0.003 260)",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail size={18} style={{ color: "oklch(0.62 0.18 40)" }} />
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Invite Staff by Email
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600 mb-5">
+                  Enter a staff member&apos;s email below. When they register
+                  with this email, they will automatically get Staff access.
+                </p>
+
+                {/* Input row */}
+                <div className="flex gap-3 mb-6">
+                  <Input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddInviteEmail();
+                    }}
+                    placeholder="staff@example.com"
+                    data-ocid="admin.input"
+                    className="flex-1 text-black text-sm"
+                  />
+                  <Button
+                    onClick={handleAddInviteEmail}
+                    disabled={
+                      addPreApprovedStaffEmail.isPending || !inviteEmail.trim()
+                    }
+                    data-ocid="admin.primary_button"
+                    className="shrink-0 text-white"
+                    style={{ background: "oklch(0.62 0.18 40)" }}
+                  >
+                    {addPreApprovedStaffEmail.isPending ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin mr-2" />
+                        Adding...
+                      </>
+                    ) : (
+                      "Add Staff Email"
+                    )}
+                  </Button>
+                </div>
+
+                {/* Pre-approved email list */}
+                {loadingEmails ? (
+                  <div
+                    data-ocid="admin.loading_state"
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Loader2
+                      size={14}
+                      className="animate-spin"
+                      style={{ color: "oklch(0.62 0.18 40)" }}
+                    />
+                    Loading invited emails...
+                  </div>
+                ) : preApprovedEmails.length === 0 ? (
+                  <div
+                    data-ocid="admin.empty_state"
+                    className="text-sm text-gray-400 italic"
+                  >
+                    No staff emails added yet.
+                  </div>
+                ) : (
+                  <ul data-ocid="admin.list" className="flex flex-col gap-2">
+                    {preApprovedEmails.map((email, idx) => (
+                      <li
+                        key={email}
+                        data-ocid={`admin.item.${idx + 1}`}
+                        className="flex items-center justify-between px-4 py-2.5 rounded-lg border"
+                        style={{
+                          background: "oklch(0.97 0.003 260)",
+                          borderColor: "oklch(0.90 0.003 260)",
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Mail size={14} className="text-gray-400 shrink-0" />
+                          <span className="text-sm text-black font-medium">
+                            {email}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`admin.delete_button.${idx + 1}`}
+                          onClick={() => handleRemoveInviteEmail(email)}
+                          disabled={removePreApprovedStaffEmail.isPending}
+                          className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Trash2 size={12} className="mr-1" />
+                          Remove
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+
+            {/* ── Registered Users ── */}
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <Users size={18} style={{ color: "oklch(0.62 0.18 40)" }} />

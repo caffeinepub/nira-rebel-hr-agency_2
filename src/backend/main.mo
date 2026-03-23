@@ -62,6 +62,8 @@ actor {
   let directApplications = Map.empty<Nat, DirectApplication>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let staffRoles = Map.empty<Principal, Bool>();
+  // Pre-approved staff emails: when someone registers with this email they get staff role
+  let preApprovedStaffEmails = Map.empty<Text, Bool>();
 
   var nextJobId : Nat = 1;
   var nextApplicationId : Nat = 1;
@@ -78,6 +80,11 @@ actor {
 
   func isStaffOrAdmin(caller : Principal) : Bool {
     AccessControl.isAdmin(accessControlState, caller) or isStaff(caller);
+  };
+
+  // Check if current caller is staff or admin (public query)
+  public query ({ caller }) func isCallerStaffOrAdmin() : async Bool {
+    isStaffOrAdmin(caller);
   };
 
   // Admin seeding: grants admin to any authenticated caller whose email matches.
@@ -113,6 +120,10 @@ actor {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.add(caller, profile);
+    // Auto-assign staff role if email is pre-approved
+    if (profile.email != "" and preApprovedStaffEmails.get(profile.email) == ?true) {
+      staffRoles.add(caller, true);
+    };
   };
 
   public shared ({ caller }) func createJob(
@@ -255,6 +266,28 @@ actor {
       Runtime.trap("Unauthorized: Only admin can check staff status");
     };
     isStaff(user);
+  };
+
+  // Pre-approved staff emails management (admin only)
+  public shared ({ caller }) func addPreApprovedStaffEmail(email : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can manage pre-approved staff emails");
+    };
+    preApprovedStaffEmails.add(email, true);
+  };
+
+  public shared ({ caller }) func removePreApprovedStaffEmail(email : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can manage pre-approved staff emails");
+    };
+    preApprovedStaffEmails.remove(email);
+  };
+
+  public query ({ caller }) func listPreApprovedStaffEmails() : async [Text] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can view pre-approved staff emails");
+    };
+    preApprovedStaffEmails.keys().toArray();
   };
 
   // DirectApplication (open to all, no auth required)

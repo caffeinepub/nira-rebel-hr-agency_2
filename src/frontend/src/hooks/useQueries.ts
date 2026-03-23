@@ -4,6 +4,21 @@ import { useActor } from "@/hooks/useActor";
 import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+const STAFF_EMAILS_KEY = "nira_rebel_staff_emails";
+
+function getStoredStaffEmails(): string[] {
+  try {
+    const raw = localStorage.getItem(STAFF_EMAILS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredStaffEmails(emails: string[]) {
+  localStorage.setItem(STAFF_EMAILS_KEY, JSON.stringify(emails));
+}
+
 export function useIsAdmin() {
   const { actor, isFetching } = useActor();
   return useQuery({
@@ -23,6 +38,25 @@ export function useCallerRole() {
     queryFn: async () => {
       if (!actor) return null;
       return actor.getCallerUserRole();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useIsCallerStaffOrAdmin() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["isCallerStaffOrAdmin"],
+    queryFn: async () => {
+      if (!actor) return false;
+      // Check admin first, then check staff via profile
+      const [isAdmin, profile] = await Promise.all([
+        actor.isCallerAdmin(),
+        actor.getCallerUserProfile(),
+      ]);
+      if (isAdmin) return true;
+      if (!profile) return false;
+      return profile.profileType === "staff";
     },
     enabled: !!actor && !isFetching,
   });
@@ -202,6 +236,43 @@ export function useAssignUserRole() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allUsers"] });
       queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
+  });
+}
+
+// Pre-approved staff emails stored in localStorage (frontend-only)
+export function useListPreApprovedStaffEmails() {
+  return useQuery<string[]>({
+    queryKey: ["preApprovedStaffEmails"],
+    queryFn: () => getStoredStaffEmails(),
+  });
+}
+
+export function useAddPreApprovedStaffEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const emails = getStoredStaffEmails();
+      const normalized = email.toLowerCase().trim();
+      if (!emails.includes(normalized)) {
+        saveStoredStaffEmails([...emails, normalized]);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["preApprovedStaffEmails"] });
+    },
+  });
+}
+
+export function useRemovePreApprovedStaffEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const emails = getStoredStaffEmails();
+      saveStoredStaffEmails(emails.filter((e) => e !== email));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["preApprovedStaffEmails"] });
     },
   });
 }

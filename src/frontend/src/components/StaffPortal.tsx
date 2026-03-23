@@ -1,5 +1,6 @@
-import { ApplicationStatus, UserRole } from "@/backend";
+import { ApplicationStatus, type DirectApplication } from "@/backend";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,11 +16,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
-  useCallerRole,
-  useListAllApplications,
-  useListJobs,
-  useUpdateApplicationStatus,
+  useIsCallerStaffOrAdmin,
+  useListAllDirectApplications,
+  useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
 import { ArrowLeft, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -31,23 +32,15 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
   [ApplicationStatus.rejected]: "bg-red-100 text-red-700",
 };
 
-function shortPrincipal(p: string) {
-  return p.length > 12 ? `${p.slice(0, 8)}...` : p;
-}
-
 export default function StaffPortal() {
-  const { data: role, isLoading: checkingRole } = useCallerRole();
-  const { data: applications = [], isLoading: loadingApps } =
-    useListAllApplications();
-  const { data: jobs = [] } = useListJobs();
-  const updateStatus = useUpdateApplicationStatus();
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
-
-  const _isAuthorized = role === UserRole.admin || role === UserRole.user;
-  // staff have 'user' role with staff profile type or admin role
-  // We allow access if role is not guest
-  const hasAccess = role !== null && role !== UserRole.guest;
+  const { data: isStaffOrAdmin, isLoading: checkingAccess } =
+    useIsCallerStaffOrAdmin();
+  const { data: directApplications = [], isLoading: loadingApps } =
+    useListAllDirectApplications();
+  const updateStatus = useUpdateDirectApplicationStatus();
 
   const handleStatusChange = async (id: bigint, status: string) => {
     try {
@@ -61,7 +54,7 @@ export default function StaffPortal() {
     }
   };
 
-  if (checkingRole) {
+  if (checkingAccess) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -82,7 +75,7 @@ export default function StaffPortal() {
     );
   }
 
-  if (!hasAccess) {
+  if (!isAuthenticated || !isStaffOrAdmin) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -93,11 +86,11 @@ export default function StaffPortal() {
             <Users size={28} className="text-orange-400" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Access Denied
+            Staff Access Required
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
             You need to be a staff member or admin to access this portal. Please
-            log in.
+            log in or contact your administrator to grant you staff access.
           </p>
           <a
             href="/"
@@ -147,16 +140,14 @@ export default function StaffPortal() {
               </h1>
             </div>
           </div>
-          {role === UserRole.admin && (
-            <a
-              href="/admin"
-              data-ocid="staff.link"
-              className="text-sm font-medium"
-              style={{ color: "oklch(0.62 0.18 40)" }}
-            >
-              Admin Dashboard →
-            </a>
-          )}
+          <a
+            href="/admin"
+            data-ocid="staff.link"
+            className="text-sm font-medium"
+            style={{ color: "oklch(0.62 0.18 40)" }}
+          >
+            Admin Dashboard →
+          </a>
         </div>
       </header>
 
@@ -166,26 +157,26 @@ export default function StaffPortal() {
           {[
             {
               label: "Total",
-              value: applications.length,
+              value: directApplications.length,
               color: "text-gray-700",
             },
             {
               label: "Pending",
-              value: applications.filter(
+              value: directApplications.filter(
                 ([, a]) => a.status === ApplicationStatus.pending,
               ).length,
               color: "text-gray-600",
             },
             {
               label: "Shortlisted",
-              value: applications.filter(
+              value: directApplications.filter(
                 ([, a]) => a.status === ApplicationStatus.shortlisted,
               ).length,
               color: "text-blue-600",
             },
             {
               label: "Interviewed",
-              value: applications.filter(
+              value: directApplications.filter(
                 ([, a]) => a.status === ApplicationStatus.interviewed,
               ).length,
               color: "text-yellow-600",
@@ -224,7 +215,7 @@ export default function StaffPortal() {
                 Loading applications...
               </p>
             </div>
-          ) : applications.length === 0 ? (
+          ) : directApplications.length === 0 ? (
             <div
               data-ocid="staff.empty_state"
               className="p-8 text-center text-sm text-muted-foreground"
@@ -235,67 +226,75 @@ export default function StaffPortal() {
             <Table>
               <TableHeader>
                 <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
-                  <TableHead>Applicant</TableHead>
-                  <TableHead>Job Title</TableHead>
-                  <TableHead>Cover Letter</TableHead>
-                  <TableHead>Current Status</TableHead>
-                  <TableHead>Update Status</TableHead>
+                  <TableHead className="text-black">#</TableHead>
+                  <TableHead className="text-black">Candidate Name</TableHead>
+                  <TableHead className="text-black">Job Applied For</TableHead>
+                  <TableHead className="text-black">Phone</TableHead>
+                  <TableHead className="text-black">Email</TableHead>
+                  <TableHead className="text-black">Status</TableHead>
+                  <TableHead className="text-black">Update Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {applications.map(([id, app], idx) => (
-                  <TableRow
-                    key={id.toString()}
-                    data-ocid={`staff.row.${idx + 1}`}
-                    style={{ background: "oklch(0.99 0.003 260)" }}
-                  >
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {shortPrincipal(app.applicant.toString())}
-                    </TableCell>
-                    <TableCell className="font-medium text-gray-900">
-                      {jobMap.get(app.jobId.toString()) || `Job #${app.jobId}`}
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <p className="text-xs text-muted-foreground truncate">
-                        {app.coverLetter || "—"}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={`border-0 ${STATUS_COLORS[app.status]}`}
-                      >
-                        {app.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={app.status}
-                        onValueChange={(val) => handleStatusChange(id, val)}
-                      >
-                        <SelectTrigger
-                          data-ocid={`staff.select.${idx + 1}`}
-                          className="h-8 text-xs w-36"
+                {directApplications.map(
+                  ([id, app]: [bigint, DirectApplication], idx: number) => (
+                    <TableRow
+                      key={id.toString()}
+                      data-ocid={`staff.row.${idx + 1}`}
+                      style={{ background: "oklch(0.99 0.003 260)" }}
+                    >
+                      <TableCell className="text-black">{idx + 1}</TableCell>
+                      <TableCell className="font-medium text-black">
+                        {app.candidateName}
+                      </TableCell>
+                      <TableCell className="text-black">
+                        {app.jobTitle}
+                      </TableCell>
+                      <TableCell className="text-black">
+                        {app.phone || "—"}
+                      </TableCell>
+                      <TableCell className="text-black">
+                        {app.email || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`border-0 ${
+                            STATUS_COLORS[app.status as ApplicationStatus]
+                          }`}
                         >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={ApplicationStatus.pending}>
-                            Pending
-                          </SelectItem>
-                          <SelectItem value={ApplicationStatus.shortlisted}>
-                            Shortlisted
-                          </SelectItem>
-                          <SelectItem value={ApplicationStatus.interviewed}>
-                            Interviewed
-                          </SelectItem>
-                          <SelectItem value={ApplicationStatus.rejected}>
-                            Rejected
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          {app.status as string}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={app.status as string}
+                          onValueChange={(val) => handleStatusChange(id, val)}
+                        >
+                          <SelectTrigger
+                            data-ocid={`staff.select.${idx + 1}`}
+                            className="h-8 text-xs w-36"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={ApplicationStatus.pending}>
+                              Pending
+                            </SelectItem>
+                            <SelectItem value={ApplicationStatus.shortlisted}>
+                              Shortlisted
+                            </SelectItem>
+                            <SelectItem value={ApplicationStatus.interviewed}>
+                              Interviewed
+                            </SelectItem>
+                            <SelectItem value={ApplicationStatus.rejected}>
+                              Rejected
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ),
+                )}
               </TableBody>
             </Table>
           )}

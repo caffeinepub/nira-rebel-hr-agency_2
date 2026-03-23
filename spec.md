@@ -1,21 +1,32 @@
 # Nira Rebel HR Agency
 
 ## Current State
-Full site is live with light theme, admin dashboard, staff portal, and role-based access control using the authorization component.
+- Admin Dashboard has Overview and Staff Management tabs
+- Staff Management tab shows user list with 'Add Staff', 'Remove Staff', 'Make Admin' buttons
+- Staff Portal shows `listAllApplications` (job applications) which is always empty since all real applications go through `submitDirectApplication` (DirectApplications)
+- No way to create/invite a staff member by email in the Admin panel
+- Backend has `staffRoles` map for tracking staff, but no pre-approved email list for auto-assignment on registration
 
 ## Requested Changes (Diff)
 
 ### Add
-- Admin seeding: a backend function `claimAdminSeed(email)` that checks if the caller's email matches `ns244128@gmail.com` and, if so, promotes the caller to admin role. This is idempotent and safe to call on every login.
-- Frontend: after every successful login or registration, call `claimAdminSeed` with the user's email. If it succeeds and the user is now admin, show a brief success notice.
+- Backend: `preApprovedStaffEmails` map + `addPreApprovedStaffEmail`, `listPreApprovedStaffEmails`, `removePreApprovedStaffEmail` functions (admin only)
+- Backend: Auto-assign staff role in `saveCallerUserProfile` if user email is in pre-approved list
+- Frontend: `useAddPreApprovedStaffEmail`, `useListPreApprovedStaffEmails`, `useRemovePreApprovedStaffEmail` hooks
+- Admin Dashboard: "Invite Staff" form at the top of Staff Management tab with email input and submit button
+- Admin Dashboard: Table showing pre-approved emails with remove option
+- Staff Portal: Also show `listAllDirectApplications` table (the real applications), alongside job applications
 
 ### Modify
-- Nothing else changes.
+- Staff Portal: Replace empty job applications table with DirectApplications table as the primary view; keep job applications as secondary
+- Staff Portal: Access check should handle staff users who are in `staffRoles` (currently `hasAccess` is too loose)
+- StaffPortal: Add `useListAllDirectApplications` hook usage for direct applications data
 
 ### Remove
-- Nothing.
+- Nothing removed
 
 ## Implementation Plan
-1. Add `claimAdminSeed(email: Text): async Bool` to backend -- returns true if admin was granted.
-2. After login/register in the frontend auth flow, call `claimAdminSeed` with the user's email.
-3. Refresh the user role after the call so the UI reflects admin status immediately.
+1. Update `main.mo`: add preApprovedStaffEmails map, add admin-only CRUD functions, auto-assign staff on registration if email matches
+2. Update `useQueries.ts`: add hooks for pre-approved staff email management
+3. Update `AdminDashboard.tsx`: add invite form + pre-approved emails list in Staff Management tab
+4. Update `StaffPortal.tsx`: add `useListAllDirectApplications` and show direct applications as the primary table
