@@ -519,7 +519,7 @@ export default function App() {
         id="hero"
         className="relative min-h-[600px] flex items-center"
         style={{
-          backgroundImage: `url('/assets/generated/hero-skyline.dim_1920x800.jpg')`,
+          backgroundImage: `url('/assets/generated/hero-banner.dim_1600x600.jpg')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
