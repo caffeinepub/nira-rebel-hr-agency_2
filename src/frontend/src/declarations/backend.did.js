@@ -140,6 +140,16 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'listDirectApplicationsWithCredentials' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Nat, DirectApplication)))],
+      ['query'],
+    ),
+  'updateDirectApplicationStatusWithCredentials' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, ApplicationStatus],
+      [IDL.Bool],
+      [],
+    ),
   'verifyStaffLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Opt(StaffLoginResult)], ['query']),
 });
 
@@ -276,6 +286,16 @@ export const idlFactory = ({ IDL }) => {
     'updateDirectApplicationStatus' : IDL.Func(
         [IDL.Nat, ApplicationStatus],
         [],
+        [],
+      ),
+    'listDirectApplicationsWithCredentials' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Nat, DirectApplication)))],
+        ['query'],
+      ),
+    'updateDirectApplicationStatusWithCredentials' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat, ApplicationStatus],
+        [IDL.Bool],
         [],
       ),
     'verifyStaffLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Opt(StaffLoginResult)], ['query']),

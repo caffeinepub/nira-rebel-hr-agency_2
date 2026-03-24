@@ -89,5 +89,7 @@ export interface backendInterface {
     submitDirectApplication(candidateName: string, jobTitle: string, phone: string, email: string): Promise<bigint>;
     updateApplicationStatus(applicationId: bigint, status: ApplicationStatus): Promise<void>;
     updateDirectApplicationStatus(id: bigint, status: ApplicationStatus): Promise<void>;
+    listDirectApplicationsWithCredentials(userId: string, password: string): Promise<Array<[bigint, DirectApplication]> | null>;
+    updateDirectApplicationStatusWithCredentials(userId: string, password: string, id: bigint, status: ApplicationStatus): Promise<boolean>;
     verifyStaffLogin(userId: string, password: string): Promise<StaffLoginResult | null>;
 }

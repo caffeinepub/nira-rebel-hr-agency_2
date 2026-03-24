@@ -172,6 +172,8 @@ export interface backendInterface {
     deleteStaffAccount(userId: string): Promise<void>;
     deactivateStaffAccount(userId: string, deactivate: boolean): Promise<void>;
     listStaffAccounts(): Promise<StaffAccountInfo[]>;
+    listDirectApplicationsWithCredentials(userId: string, password: string): Promise<Array<[bigint, DirectApplication]> | null>;
+    updateDirectApplicationStatusWithCredentials(userId: string, password: string, id: bigint, status: ApplicationStatus): Promise<boolean>;
     verifyStaffLogin(userId: string, password: string): Promise<StaffLoginResult | null>;
     isCallerStaffOrAdmin(): Promise<boolean>;
 }
@@ -592,6 +594,36 @@ export class Backend implements backendInterface {
         } else {
             const result = await (this.actor as any).verifyStaffLogin(arg0, arg1) as [] | [{userId: string; name: string}];
             return result.length === 0 ? null : result[0];
+        }
+    }
+    async listDirectApplicationsWithCredentials(userId: string, password: string): Promise<Array<[bigint, DirectApplication]> | null> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).listDirectApplicationsWithCredentials(userId, password) as [] | [Array<[bigint, any]>];
+                if (result.length === 0) return null;
+                return result[0].map(([id, app]: [bigint, any]) => [id, from_candid_DirectApplication_n19(this._uploadFile, this._downloadFile, app)] as [bigint, DirectApplication]);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).listDirectApplicationsWithCredentials(userId, password) as [] | [Array<[bigint, any]>];
+            if (result.length === 0) return null;
+            return result[0].map(([id, app]: [bigint, any]) => [id, from_candid_DirectApplication_n19(this._uploadFile, this._downloadFile, app)] as [bigint, DirectApplication]);
+        }
+    }
+    async updateDirectApplicationStatusWithCredentials(userId: string, password: string, id: bigint, status: ApplicationStatus): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).updateDirectApplicationStatusWithCredentials(userId, password, id, to_candid_ApplicationStatus_n26(this._uploadFile, this._downloadFile, status));
+                return result as boolean;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).updateDirectApplicationStatusWithCredentials(userId, password, id, to_candid_ApplicationStatus_n26(this._uploadFile, this._downloadFile, status));
+            return result as boolean;
         }
     }
     async isCallerStaffOrAdmin(): Promise<boolean> {

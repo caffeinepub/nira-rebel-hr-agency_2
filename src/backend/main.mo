@@ -438,6 +438,41 @@ persistent actor {
     };
   };
 
+  // List direct applications using manual staff credentials (for manual-login staff like raghav)
+  public query func listDirectApplicationsWithCredentials(userId : Text, password : Text) : async ?[(Nat, DirectApplication)] {
+    switch (staffAccounts.get(userId)) {
+      case (?account) {
+        if (Text.equal(account.password, password) and account.isActive) {
+          ?directApplications.entries().toArray();
+        } else {
+          null;
+        };
+      };
+      case (null) { null };
+    };
+  };
+
+  // Update direct application status using manual staff credentials
+  public shared func updateDirectApplicationStatusWithCredentials(userId : Text, password : Text, id : Nat, status : ApplicationStatus) : async Bool {
+    switch (staffAccounts.get(userId)) {
+      case (?account) {
+        if (Text.equal(account.password, password) and account.isActive) {
+          switch (directApplications.get(id)) {
+            case (?application) {
+              let updatedApplication : DirectApplication = { application with status };
+              directApplications.add(id, updatedApplication);
+              true;
+            };
+            case (null) { false };
+          };
+        } else {
+          false;
+        };
+      };
+      case (null) { false };
+    };
+  };
+
   // ─── Attendance System ───
 
   // Staff clocks in — no auth needed (identified by staffId from manual login session)

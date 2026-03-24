@@ -19,19 +19,22 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   type AttendanceLog,
   useClockIn,
   useClockOut,
   useGetStaffAttendance,
-  useIsCallerStaffOrAdmin,
   useIsStaffClockedIn,
-  useListAllDirectApplications,
-  useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
-import { ArrowLeft, Clock, ClockIcon, Loader2, Users } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  Clock,
+  ClockIcon,
+  Loader2,
+  MessageCircle,
+  Users,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
@@ -43,25 +46,18 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
 
 const LIGHT_BLUE = "#5BB8D4";
 
-type StaffSession = { userId: string; name: string };
+type StaffSession = { userId: string; name: string; password: string };
 
 function getStoredSession(): StaffSession | null {
   try {
     const raw = localStorage.getItem("staffSession");
     if (!raw) return null;
-    return JSON.parse(raw) as StaffSession;
+    const parsed = JSON.parse(raw) as Partial<StaffSession>;
+    // Require password to be stored — sessions without password can't fetch data
+    if (!parsed.userId || !parsed.name || !parsed.password) return null;
+    return parsed as StaffSession;
   } catch {
     return null;
-  }
-}
-
-function getDeactivatedIds(): string[] {
-  try {
-    const raw = localStorage.getItem("deactivatedStaffIds");
-    if (!raw) return [];
-    return JSON.parse(raw) as string[];
-  } catch {
-    return [];
   }
 }
 
@@ -84,6 +80,12 @@ function calcDuration(clockIn: bigint, clockOut: [] | [bigint]): string {
 function getTodayDate(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// WhatsApp link helper — strips non-digits and builds wa.me URL
+function buildWhatsAppLink(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return `https://wa.me/${digits}`;
 }
 
 // ─── Attendance Tab ──────────────────────────────────────────────────────────
@@ -125,7 +127,6 @@ function AttendanceTab({ session }: { session: StaffSession }) {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Clock In/Out Card */}
       <div
         className="rounded-2xl border p-8 flex flex-col items-center gap-6"
         style={{
@@ -144,10 +145,7 @@ function AttendanceTab({ session }: { session: StaffSession }) {
         </div>
 
         {checkingStatus ? (
-          <div
-            data-ocid="staff.loading_state"
-            className="flex items-center gap-2 text-sm text-gray-500"
-          >
+          <div className="flex items-center gap-2 text-sm text-gray-500">
             <Loader2
               size={16}
               className="animate-spin"
@@ -185,7 +183,6 @@ function AttendanceTab({ session }: { session: StaffSession }) {
           <Button
             onClick={handleClockOut}
             disabled={clockOut.isPending}
-            data-ocid="staff.primary_button"
             className="w-48 h-12 text-base font-bold text-white rounded-xl"
             style={{ background: "#ef4444" }}
           >
@@ -204,7 +201,6 @@ function AttendanceTab({ session }: { session: StaffSession }) {
           <Button
             onClick={handleClockIn}
             disabled={clockIn.isPending}
-            data-ocid="staff.primary_button"
             className="w-48 h-12 text-base font-bold text-white rounded-xl"
             style={{ background: "#22c55e" }}
           >
@@ -222,7 +218,6 @@ function AttendanceTab({ session }: { session: StaffSession }) {
         )}
       </div>
 
-      {/* Attendance History */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 mb-4">
           My Attendance History
@@ -232,7 +227,7 @@ function AttendanceTab({ session }: { session: StaffSession }) {
           style={{ borderColor: "oklch(0.88 0.003 260)" }}
         >
           {loadingLogs ? (
-            <div data-ocid="staff.loading_state" className="p-8 text-center">
+            <div className="p-8 text-center">
               <Loader2
                 className="animate-spin mx-auto mb-2"
                 size={20}
@@ -243,10 +238,7 @@ function AttendanceTab({ session }: { session: StaffSession }) {
               </p>
             </div>
           ) : logs.length === 0 ? (
-            <div
-              data-ocid="staff.empty_state"
-              className="p-8 text-center text-sm text-muted-foreground"
-            >
+            <div className="p-8 text-center text-sm text-muted-foreground">
               No attendance records yet.
             </div>
           ) : (
@@ -266,7 +258,6 @@ function AttendanceTab({ session }: { session: StaffSession }) {
                   .map((log: AttendanceLog, idx: number) => (
                     <TableRow
                       key={log.logId.toString()}
-                      data-ocid={`staff.row.${idx + 1}`}
                       style={{ background: "oklch(0.99 0.003 260)" }}
                     >
                       <TableCell className="text-black">{idx + 1}</TableCell>
@@ -300,75 +291,90 @@ function AttendanceTab({ session }: { session: StaffSession }) {
 }
 
 export default function StaffPortal() {
-  const { identity } = useInternetIdentity();
-  const isAdminViaII = !!identity && !identity.getPrincipal().isAnonymous();
-
-  const { isLoading: checkingAccess } = useIsCallerStaffOrAdmin();
-
-  const updateStatus = useUpdateDirectApplicationStatus();
-
   const { actor } = useActor();
 
   const [session, setSession] = useState<StaffSession | null>(getStoredSession);
   const [activeTab, setActiveTab] = useState("applications");
-  const { data: directApplications = [], isLoading: loadingApps } =
-    useListAllDirectApplications({ enabled: isAdminViaII || !!session });
   const [loginUserId, setLoginUserId] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState("");
 
-  const handleManualLogin = async () => {
+  const [apps, setApps] = useState<Array<[bigint, DirectApplication]>>([]);
+  const [loadingApps, setLoadingApps] = useState(false);
+
+  // Fetch applications using stored credentials — works for ANY staff account
+  const fetchApps = useCallback(
+    async (sess: StaffSession) => {
+      if (!actor) return;
+      setLoadingApps(true);
+      try {
+        const result = await actor.listDirectApplicationsWithCredentials(
+          sess.userId,
+          sess.password,
+        );
+        if (result !== null) {
+          setApps(result);
+        } else {
+          toast.error("Session expired. Please log in again.");
+        }
+      } catch {
+        toast.error("Failed to load applications.");
+      } finally {
+        setLoadingApps(false);
+      }
+    },
+    [actor],
+  );
+
+  // Auto-fetch whenever session or actor becomes available
+  useEffect(() => {
+    if (session && actor) {
+      void fetchApps(session);
+    }
+  }, [session, actor, fetchApps]);
+
+  const handleLogin = async () => {
     if (!loginUserId.trim() || !loginPassword.trim()) {
-      toast.error("Please enter your UserID and password");
+      setLoginError("Please enter your UserID and password.");
       return;
     }
     if (!actor) {
-      toast.error("Not connected to backend");
+      setLoginError("Not connected to backend. Please wait and try again.");
       return;
     }
-
-    const deactivated = getDeactivatedIds();
-    if (deactivated.includes(loginUserId.trim())) {
-      setLoginError(
-        "This account has been deactivated. Please contact your administrator.",
-      );
-      return;
-    }
-
     setLoggingIn(true);
     setLoginError("");
     try {
+      // verifyStaffLogin checks credentials AND isActive flag in the backend
       const result = await actor.verifyStaffLogin(
         loginUserId.trim(),
         loginPassword,
       );
       if (result) {
-        const deactivatedNow = getDeactivatedIds();
-        if (deactivatedNow.includes(result.userId)) {
-          setLoginError(
-            "This account has been deactivated. Please contact your administrator.",
-          );
-          return;
-        }
-        const sess: StaffSession = { userId: result.userId, name: result.name };
+        const sess: StaffSession = {
+          userId: result.userId,
+          name: result.name,
+          password: loginPassword,
+        };
         localStorage.setItem("staffSession", JSON.stringify(sess));
         setSession(sess);
         toast.success(`Welcome, ${result.name}!`);
       } else {
-        toast.error("Invalid UserID or password");
+        setLoginError("Invalid UserID or password, or account is deactivated.");
       }
     } catch {
-      toast.error("Login failed. Please try again.");
+      setLoginError("Login failed. Please try again.");
     } finally {
       setLoggingIn(false);
     }
   };
 
-  const handleManualLogout = () => {
+  const handleLogout = () => {
     localStorage.removeItem("staffSession");
     setSession(null);
+    setApps([]);
     setLoginUserId("");
     setLoginPassword("");
     setLoginError("");
@@ -376,48 +382,34 @@ export default function StaffPortal() {
   };
 
   const handleStatusChange = async (id: bigint, status: string) => {
+    if (!session || !actor) return;
     try {
-      await updateStatus.mutateAsync({
+      const ok = await actor.updateDirectApplicationStatusWithCredentials(
+        session.userId,
+        session.password,
         id,
-        status: status as ApplicationStatus,
-      });
+        status as ApplicationStatus,
+      );
+      if (!ok) {
+        toast.error("Failed to update status — session may have expired.");
+        return;
+      }
+      // Refresh list after update
+      await fetchApps(session);
       toast.success("Application status updated");
     } catch {
       toast.error("Failed to update status");
     }
   };
 
-  const hasAccess = !!session || isAdminViaII;
-
-  if (!hasAccess) {
-    if (checkingAccess && isAdminViaII) {
-      return (
-        <div
-          className="min-h-screen flex items-center justify-center"
-          style={{ background: "oklch(0.99 0.003 260)" }}
-        >
-          <div
-            data-ocid="staff.loading_state"
-            className="flex flex-col items-center gap-3"
-          >
-            <Loader2
-              className="animate-spin"
-              size={28}
-              style={{ color: "oklch(0.62 0.18 220)" }}
-            />
-            <p className="text-sm text-muted-foreground">Verifying access...</p>
-          </div>
-        </div>
-      );
-    }
-
+  // ─── Login Screen ────────────────────────────────────────────────────────
+  if (!session) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4"
         style={{ background: "oklch(0.97 0.003 260)" }}
       >
         <div
-          data-ocid="staff.dialog"
           className="w-full max-w-md rounded-2xl border shadow-lg p-8"
           style={{
             background: "oklch(0.99 0.003 260)",
@@ -427,7 +419,7 @@ export default function StaffPortal() {
           <div className="text-center mb-8">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-              style={{ background: "oklch(0.62 0.18 220)" }}
+              style={{ background: LIGHT_BLUE }}
             >
               <Users size={22} className="text-white" />
             </div>
@@ -454,10 +446,9 @@ export default function StaffPortal() {
                   setLoginError("");
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleManualLogin();
+                  if (e.key === "Enter") handleLogin();
                 }}
                 placeholder="Enter your UserID"
-                data-ocid="staff.input"
                 className="text-black"
                 autoComplete="username"
               />
@@ -479,10 +470,9 @@ export default function StaffPortal() {
                     setLoginError("");
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleManualLogin();
+                    if (e.key === "Enter") handleLogin();
                   }}
                   placeholder="Enter your password"
-                  data-ocid="staff.input"
                   className="text-black pr-16"
                   autoComplete="current-password"
                 />
@@ -499,7 +489,6 @@ export default function StaffPortal() {
 
             {loginError && (
               <div
-                data-ocid="staff.error_state"
                 className="rounded-lg px-4 py-3 text-sm font-medium text-center"
                 style={{
                   background: "#fff3f3",
@@ -512,11 +501,10 @@ export default function StaffPortal() {
             )}
 
             <Button
-              onClick={handleManualLogin}
+              onClick={handleLogin}
               disabled={loggingIn}
-              data-ocid="staff.submit_button"
               className="w-full text-white font-semibold mt-2"
-              style={{ background: "oklch(0.62 0.18 220)" }}
+              style={{ background: LIGHT_BLUE }}
             >
               {loggingIn ? (
                 <>
@@ -532,7 +520,6 @@ export default function StaffPortal() {
           <div className="mt-6 text-center">
             <a
               href="/"
-              data-ocid="staff.link"
               className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
             >
               <ArrowLeft size={14} /> Back to Homepage
@@ -543,6 +530,7 @@ export default function StaffPortal() {
     );
   }
 
+  // ─── Main Portal (logged in) ─────────────────────────────────────────────
   return (
     <div
       className="min-h-screen"
@@ -560,7 +548,6 @@ export default function StaffPortal() {
           <div className="flex items-center gap-4">
             <a
               href="/"
-              data-ocid="staff.link"
               className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft size={16} /> Back to Site
@@ -569,7 +556,7 @@ export default function StaffPortal() {
             <div className="flex items-center gap-2">
               <div
                 className="w-7 h-7 rounded flex items-center justify-center text-white"
-                style={{ background: "oklch(0.62 0.18 220)" }}
+                style={{ background: LIGHT_BLUE }}
               >
                 <Users size={14} />
               </div>
@@ -579,32 +566,17 @@ export default function StaffPortal() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {session && (
-              <>
-                <span className="text-sm text-gray-700">
-                  Welcome, <strong>{session.name}</strong>
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleManualLogout}
-                  data-ocid="staff.secondary_button"
-                  className="text-sm h-8"
-                >
-                  Logout
-                </Button>
-              </>
-            )}
-            {isAdminViaII && (
-              <a
-                href="/admin"
-                data-ocid="staff.link"
-                className="text-sm font-medium"
-                style={{ color: "oklch(0.62 0.18 220)" }}
-              >
-                Admin Dashboard
-              </a>
-            )}
+            <span className="text-sm text-gray-700">
+              Welcome, <strong>{session.name}</strong>
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleLogout}
+              className="text-sm h-8"
+            >
+              Logout
+            </Button>
           </div>
         </div>
       </header>
@@ -613,18 +585,14 @@ export default function StaffPortal() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList
             className="mb-8 h-11 gap-2 p-1"
-            style={{
-              background: "#e0f2fe",
-              border: "1px solid #7dd3fc",
-            }}
+            style={{ background: "#e0f2fe", border: "1px solid #7dd3fc" }}
           >
             <TabsTrigger
               value="applications"
-              data-ocid="staff.tab"
               className="px-6 text-sm font-bold text-black data-[state=active]:text-black data-[state=active]:shadow-sm"
               style={
                 {
-                  background: "#5BB8D4",
+                  background: LIGHT_BLUE,
                   color: "#000",
                   fontWeight: 700,
                 } as React.CSSProperties
@@ -634,11 +602,10 @@ export default function StaffPortal() {
             </TabsTrigger>
             <TabsTrigger
               value="attendance"
-              data-ocid="staff.tab"
               className="px-6 text-sm font-bold text-black data-[state=active]:text-black data-[state=active]:shadow-sm"
               style={
                 {
-                  background: "#5BB8D4",
+                  background: LIGHT_BLUE,
                   color: "#000",
                   fontWeight: 700,
                 } as React.CSSProperties
@@ -651,47 +618,47 @@ export default function StaffPortal() {
 
           {/* ─── Applications Tab ─── */}
           <TabsContent value="applications">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end gap-2 mb-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => fetchApps(session)}
+                disabled={loadingApps}
+                className="text-black font-semibold border-gray-300"
+              >
+                {loadingApps ? "Refreshing..." : "Refresh"}
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => window.print()}
                 className="text-black font-semibold border-gray-300"
-                data-ocid="staff.primary_button"
               >
                 Print Report
               </Button>
             </div>
-            <style>
-              {
-                "@media print { body > *:not(#print-area) { display: none !important; } #print-area { display: block !important; } }"
-              }
-            </style>
-            {/* Summary */}
+
+            {/* Stats summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
               {[
-                {
-                  label: "Total",
-                  value: directApplications.length,
-                  color: "text-gray-700",
-                },
+                { label: "Total", value: apps.length, color: "text-gray-700" },
                 {
                   label: "Pending",
-                  value: directApplications.filter(
+                  value: apps.filter(
                     ([, a]) => a.status === ApplicationStatus.pending,
                   ).length,
                   color: "text-gray-600",
                 },
                 {
                   label: "Shortlisted",
-                  value: directApplications.filter(
+                  value: apps.filter(
                     ([, a]) => a.status === ApplicationStatus.shortlisted,
                   ).length,
                   color: "text-blue-600",
                 },
                 {
                   label: "Interviewed",
-                  value: directApplications.filter(
+                  value: apps.filter(
                     ([, a]) => a.status === ApplicationStatus.interviewed,
                   ).length,
                   color: "text-yellow-600",
@@ -715,143 +682,133 @@ export default function StaffPortal() {
               ))}
             </div>
 
-            <div id="print-area">
-              <div
-                className="rounded-xl border overflow-hidden"
-                style={{ borderColor: "oklch(0.88 0.003 260)" }}
-              >
-                {loadingApps ? (
-                  <div
-                    data-ocid="staff.loading_state"
-                    className="p-8 text-center"
-                  >
-                    <Loader2
-                      className="animate-spin mx-auto mb-2"
-                      size={20}
-                      style={{ color: "oklch(0.62 0.18 220)" }}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Loading applications...
-                    </p>
-                  </div>
-                ) : directApplications.length === 0 ? (
-                  <div
-                    data-ocid="staff.empty_state"
-                    className="p-8 text-center text-sm text-muted-foreground"
-                  >
-                    No applications yet.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
-                        <TableHead className="text-black">#</TableHead>
-                        <TableHead className="text-black">
-                          Candidate Name
-                        </TableHead>
-                        <TableHead className="text-black">
-                          Job Applied For
-                        </TableHead>
-                        <TableHead className="text-black">Phone</TableHead>
-                        <TableHead className="text-black">Email</TableHead>
-                        <TableHead className="text-black">Status</TableHead>
-                        <TableHead className="text-black">
-                          Update Status
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {directApplications.map(
-                        (
-                          [id, app]: [bigint, DirectApplication],
-                          idx: number,
-                        ) => (
-                          <TableRow
-                            key={id.toString()}
-                            data-ocid={`staff.row.${idx + 1}`}
-                            style={{ background: "oklch(0.99 0.003 260)" }}
-                          >
-                            <TableCell className="text-black">
-                              {idx + 1}
-                            </TableCell>
-                            <TableCell className="font-medium text-black">
-                              {app.candidateName}
-                            </TableCell>
-                            <TableCell className="text-black">
-                              {app.jobTitle}
-                            </TableCell>
-                            <TableCell className="text-black">
-                              {app.phone || "—"}
-                            </TableCell>
-                            <TableCell className="text-black">
-                              {app.email || "—"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`border-0 ${
-                                  STATUS_COLORS[app.status as ApplicationStatus]
-                                }`}
-                              >
-                                {app.status as string}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={app.status as string}
-                                onValueChange={(val) =>
-                                  handleStatusChange(id, val)
-                                }
-                              >
-                                <SelectTrigger
-                                  data-ocid={`staff.select.${idx + 1}`}
-                                  className="h-8 text-xs w-36"
+            <div
+              className="rounded-xl border overflow-hidden"
+              style={{ borderColor: "oklch(0.88 0.003 260)" }}
+            >
+              {loadingApps ? (
+                <div className="p-8 text-center">
+                  <Loader2
+                    className="animate-spin mx-auto mb-2"
+                    size={20}
+                    style={{ color: LIGHT_BLUE }}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Loading applications...
+                  </p>
+                </div>
+              ) : apps.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  No applications yet.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
+                      <TableHead className="text-black">#</TableHead>
+                      <TableHead className="text-black">
+                        Candidate Name
+                      </TableHead>
+                      <TableHead className="text-black">
+                        Job Applied For
+                      </TableHead>
+                      <TableHead className="text-black">Phone</TableHead>
+                      <TableHead className="text-black">Email</TableHead>
+                      <TableHead className="text-black">Status</TableHead>
+                      <TableHead className="text-black">
+                        Update Status
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {apps.map(
+                      ([id, app]: [bigint, DirectApplication], idx: number) => (
+                        <TableRow
+                          key={id.toString()}
+                          style={{ background: "oklch(0.99 0.003 260)" }}
+                        >
+                          <TableCell className="text-black">
+                            {idx + 1}
+                          </TableCell>
+                          <TableCell className="font-medium text-black">
+                            {app.candidateName}
+                          </TableCell>
+                          <TableCell className="text-black">
+                            {app.jobTitle}
+                          </TableCell>
+                          <TableCell className="text-black">
+                            <div className="flex items-center gap-2">
+                              <span>{app.phone || "—"}</span>
+                              {app.phone && (
+                                <a
+                                  href={buildWhatsAppLink(app.phone)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`WhatsApp ${app.phone}`}
+                                  className="flex items-center justify-center w-7 h-7 rounded-full hover:opacity-80 transition-opacity"
+                                  style={{ background: "#25D366" }}
                                 >
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value={ApplicationStatus.pending}>
-                                    Pending
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={ApplicationStatus.shortlisted}
-                                  >
-                                    Shortlisted
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={ApplicationStatus.interviewed}
-                                  >
-                                    Interviewed
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={ApplicationStatus.rejected}
-                                  >
-                                    Rejected
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        ),
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
+                                  <MessageCircle
+                                    size={14}
+                                    className="text-white"
+                                    fill="white"
+                                  />
+                                </a>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-black">
+                            {app.email || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`border-0 ${STATUS_COLORS[app.status as ApplicationStatus]}`}
+                            >
+                              {app.status as string}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={app.status as string}
+                              onValueChange={(val) =>
+                                handleStatusChange(id, val)
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs w-36">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={ApplicationStatus.pending}>
+                                  Pending
+                                </SelectItem>
+                                <SelectItem
+                                  value={ApplicationStatus.shortlisted}
+                                >
+                                  Shortlisted
+                                </SelectItem>
+                                <SelectItem
+                                  value={ApplicationStatus.interviewed}
+                                >
+                                  Interviewed
+                                </SelectItem>
+                                <SelectItem value={ApplicationStatus.rejected}>
+                                  Rejected
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           </TabsContent>
 
           {/* ─── Attendance Tab ─── */}
           <TabsContent value="attendance">
-            {session ? (
-              <AttendanceTab session={session} />
-            ) : (
-              <div
-                data-ocid="staff.empty_state"
-                className="p-8 text-center text-sm text-muted-foreground"
-              >
-                Log in as staff to use Attendance tracking. Admin view only.
-              </div>
-            )}
+            <AttendanceTab session={session} />
           </TabsContent>
         </Tabs>
       </main>
