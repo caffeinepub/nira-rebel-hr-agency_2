@@ -25,7 +25,8 @@ import {
 } from "@/hooks/useQueries";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Facebook,
   Instagram,
   Linkedin,
@@ -37,6 +38,7 @@ import {
   ShieldCheck,
   Star,
   User,
+  Users,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -64,62 +66,150 @@ function useCountUp(target: number, duration = 2000): number {
 
 const NAV_LINKS = [
   { label: "Home", href: "#" },
+  { label: "Services", href: "#expertise" },
+  { label: "About", href: "#about" },
   { label: "Candidates", href: "#candidates" },
-  { label: "Employers", href: "#employers" },
-  { label: "Job Search", href: "#jobs", active: true },
-  { label: "Locations", href: "#locations" },
-  { label: "About Us", href: "#about" },
-  { label: "Blog", href: "#blog" },
+  { label: "Blogs", href: "#blog" },
 ];
 
-const CLIENT_LOGOS = [
-  { name: "SBI", color: "#1a3a6b", bg: "#ffffff" },
-  { name: "PNB", color: "#1a5276", bg: "#ffffff" },
-  { name: "AXIS BANK", color: "#97144d", bg: "#ffffff" },
-  { name: "HITACHI", color: "#d32f2f", bg: "#ffffff" },
-  { name: "METRO", color: "#1565c0", bg: "#ffffff" },
-  { name: "BLINKIT", color: "#f9a825", bg: "#ffffff" },
-];
-
-const FEATURED_JOBS = [
-  { title: "ATM Operator", company: "SBI Bank", location: "New Delhi" },
-  { title: "Floor Coordinator", company: "Metro Rail", location: "Delhi" },
+const CAROUSEL_SLIDES = [
   {
-    title: "Credit Card Executive",
-    company: "Axis Bank",
-    location: "Gurugram",
+    badge: "TOP BANKING PARTNERS",
+    heading: "SBI \u2022 PNB \u2022 Axis Bank",
+    gold: "& More",
+    subtitle:
+      "Floor Coordinator \u2022 ATM Operator \u2022 Sales Manager \u2022 Branch Manager",
   },
-  { title: "Cash Management Officer", company: "Hitachi", location: "Delhi" },
   {
-    title: "Quick Commerce Executive",
+    badge: "PAN INDIA PLACEMENTS",
+    heading: "Find Your Dream Job",
+    gold: "Across India",
+    subtitle:
+      "Delhi \u2022 Gurugram \u2022 Bihar \u2022 Patna \u2022 UP \u2022 Rewari & More",
+  },
+  {
+    badge: "EXPERT RECRUITMENT",
+    heading: "Your Career Starts Here",
+    gold: "Pan India",
+    subtitle: "Banking \u2022 E-Commerce \u2022 Logistics \u2022 Metro & More",
+  },
+];
+
+const JOB_FILTERS = [
+  "All",
+  "SBI Bank",
+  "PNB Bank",
+  "Hitachi Cash Management",
+  "E-Commerce / Logistics",
+  "Metro Department",
+  "Axis Bank",
+];
+
+interface JobCard {
+  title: string;
+  company: string;
+  location: string;
+  address: string;
+  salary: string;
+  category: string;
+  categoryColor: string;
+  description: string;
+  filter: string;
+}
+
+const JOBS: JobCard[] = [
+  {
+    title: "Teller",
+    company: "SBI Bank",
+    location: "Delhi",
+    address: "SBI Branch 1, Delhi",
+    salary: "\u20b935,000/month",
+    category: "Banking",
+    categoryColor: "#1a3a6b",
+    description:
+      "Counter and Cash Management, System Handling, System Management, Close Vending Machines.",
+    filter: "SBI Bank",
+  },
+  {
+    title: "Cashier",
+    company: "PNB Bank",
+    location: "Delhi",
+    address: "PNB Central Branch, Delhi",
+    salary: "\u20b932,000/month",
+    category: "Banking",
+    categoryColor: "#1a5276",
+    description:
+      "Deposit, Withdrawal, Loans, System Handling, System Management, ATM Reconciliation.",
+    filter: "PNB Bank",
+  },
+  {
+    title: "Vault Manager",
+    company: "Hitachi",
+    location: "Delhi",
+    address: "Hitachi Regional Office, Delhi",
+    salary: "\u20b945,000/month",
+    category: "Cash Management",
+    categoryColor: "#b45309",
+    description:
+      "Triangle balancing, Daybook maintenance, Cash deposit, Bank liaison for clients, Cross-check and reconciliation.",
+    filter: "Hitachi Cash Management",
+  },
+  {
+    title: "Warehousing Officer",
     company: "Blinkit",
-    location: "Delhi NCR",
+    location: "Delhi",
+    address: "Warehouse 2, Delhi",
+    salary: "\u20b925,000/month",
+    category: "E-Commerce/Logistics",
+    categoryColor: "#0e7490",
+    description:
+      "Inventory use, Inventory system, Material logistics, Inward/outward record maintenance.",
+    filter: "E-Commerce / Logistics",
   },
-  { title: "Bank Sales Executive", company: "PNB Bank", location: "Delhi" },
-  { title: "E-commerce Executive", company: "Flipkart", location: "Delhi" },
-  { title: "Delivery Executive", company: "Swiggy", location: "Gurugram" },
-  { title: "Account Manager", company: "Amazon", location: "Delhi" },
-  { title: "Warehouse Associate", company: "Blinkit", location: "Faridabad" },
+  {
+    title: "Procurement",
+    company: "Zepto",
+    location: "Delhi",
+    address: "Procurement Center, Delhi",
+    salary: "\u20b927,000/month",
+    category: "E-Commerce/Logistics",
+    categoryColor: "#0e7490",
+    description:
+      "Logistics, Warehousing, System operations, Vendor management, Delivery management, Procurement.",
+    filter: "E-Commerce / Logistics",
+  },
+  {
+    title: "Accountant",
+    company: "Metro Express",
+    location: "Delhi",
+    address: "Metro Office, Delhi",
+    salary: "\u20b930,000/month",
+    category: "Metro Department",
+    categoryColor: "#6d28d9",
+    description:
+      "Deposit of tender, JV management, Record keeping, Counter deposit management, Travel allowance/expenses management.",
+    filter: "Metro Department",
+  },
 ];
 
 const EXPERTISE = [
   {
-    icon: "🔍",
+    icon: "\ud83d\udd0d",
     title: "Executive Search",
     desc: "Specialized placement for senior & leadership roles in banking and finance.",
   },
   {
-    icon: "🏦",
+    icon: "\ud83c\udfe6",
     title: "Banking Recruitment",
     desc: "Connecting skilled professionals with top banks: SBI, PNB, Axis Bank and more.",
   },
   {
-    icon: "🛒",
+    icon: "\ud83d\uded2",
     title: "E-commerce Staffing",
     desc: "Placing candidates across Blinkit, Swiggy, Flipkart, Amazon & delivery networks.",
   },
   {
-    icon: "⚙️",
+    icon: "\u2699\ufe0f",
     title: "Testing & Operations",
     desc: "ATM testing, cash management operations, and floor coordination staffing.",
   },
@@ -175,6 +265,10 @@ const QUICK_LINKS = [
   "Privacy Policy",
 ];
 
+const WA_GROUP =
+  "https://chat.whatsapp.com/Ij6uY2RChCtBoP5uqaM4Oc?mode=hqctcla";
+const WA_CHANNEL = "https://whatsapp.com/channel/0029VbAz4VLChq6I5mpCQH3D";
+
 interface ApplyFormData {
   name: string;
   phone: string;
@@ -204,10 +298,14 @@ const initialForm: ApplyFormData = {
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
+  const [applyJobTitle, setApplyJobTitle] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState<ApplyFormData>(initialForm);
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [activeFilter, setActiveFilter] = useState("All");
 
   const [currentPage, setCurrentPage] = useState<string>(
     window.location.pathname,
@@ -223,8 +321,16 @@ export default function App() {
   const isStaffOrAdmin = callerRole === "admin" || callerRole === "user";
   const displayName =
     callerProfile?.name?.trim() ||
-    `${identity?.getPrincipal().toString().slice(0, 5)}…` ||
+    `${identity?.getPrincipal().toString().slice(0, 5)}\u2026` ||
     "";
+
+  // Auto-advance carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLogout = async () => {
     await clear();
@@ -253,7 +359,6 @@ export default function App() {
       });
       setSubmitted(true);
     } catch {
-      // still show success to user
       setSubmitted(true);
     }
   };
@@ -262,7 +367,19 @@ export default function App() {
     setApplyOpen(false);
     setSubmitted(false);
     setForm(initialForm);
+    setApplyJobTitle("");
   };
+
+  const openApplyWithJob = (jobTitle: string) => {
+    setApplyJobTitle(jobTitle);
+    setForm((prev) => ({ ...prev, position: jobTitle }));
+    setApplyOpen(true);
+  };
+
+  const filteredJobs =
+    activeFilter === "All"
+      ? JOBS
+      : JOBS.filter((j) => j.filter === activeFilter);
 
   // Simple routing
   if (currentPage === "/admin")
@@ -281,28 +398,74 @@ export default function App() {
     );
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
-      {/* HEADER */}
+    <div className="min-h-screen bg-white text-gray-900 font-sans">
+      {/* ── ANNOUNCEMENT BAR ── */}
+      {!announcementDismissed && (
+        <div
+          className="w-full flex items-center justify-between gap-2 px-4 py-2 text-white text-sm"
+          style={{ background: "#25D366" }}
+          data-ocid="announcement.panel"
+        >
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-medium">
+              \ud83d\udd14 Join our WhatsApp for instant job alerts!
+            </span>
+            <a
+              href={WA_GROUP}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-ocid="announcement.primary_button"
+              className="px-3 py-1 rounded border border-white text-white text-xs font-bold hover:bg-white hover:text-green-600 transition-colors"
+            >
+              \ud83d\udcac Join Group
+            </a>
+            <a
+              href={WA_CHANNEL}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-ocid="announcement.secondary_button"
+              className="px-3 py-1 rounded border border-white text-white text-xs font-bold hover:bg-white hover:text-green-600 transition-colors"
+            >
+              \ud83d\udce2 WA Channel
+            </a>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAnnouncementDismissed(true)}
+            aria-label="Dismiss"
+            data-ocid="announcement.close_button"
+            className="p-1 rounded hover:bg-green-500 transition-colors flex-shrink-0"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {/* ── DARK NAVBAR ── */}
       <header
         className="sticky top-0 z-50 w-full"
-        style={{
-          background: "oklch(0.99 0.003 260)",
-          borderBottom: "1px solid oklch(0.88 0.003 260)",
-        }}
+        style={{ background: "#0d1b2e", borderBottom: "1px solid #1e3150" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <a
-              href="#top"
-              className="flex items-center gap-2 flex-shrink-0"
-              data-ocid="nav.link"
-            >
+            <a href="#home" className="flex items-center gap-2 flex-shrink-0">
               <img
                 src="/assets/uploads/nira_rebel_photo-019d1c52-1b51-77f0-b8ce-2159e2ba622a-1.jpeg"
-                alt="Nira Rebel HR Agency PVT LTD"
-                className="h-12 w-auto object-contain"
+                alt="Nira Rebel HR Agency"
+                className="h-10 w-auto object-contain rounded"
               />
+              <div className="hidden sm:block">
+                <p
+                  className="text-xs font-bold leading-tight"
+                  style={{ color: "#f5c842" }}
+                >
+                  Nira Rebel HR Agency
+                </p>
+                <p className="text-[10px]" style={{ color: "#a0b4c8" }}>
+                  Pvt Ltd
+                </p>
+              </div>
             </a>
 
             {/* Desktop Nav */}
@@ -315,18 +478,11 @@ export default function App() {
                   key={link.label}
                   href={link.href}
                   data-ocid="nav.link"
-                  className={`px-3 py-2 text-sm font-medium transition-colors rounded ${
-                    link.active
-                      ? "text-brand-orange"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className="px-3 py-2 text-sm font-medium text-white hover:text-yellow-400 transition-colors rounded"
                 >
                   {link.label}
                 </a>
               ))}
-            </nav>
-            {/* Dashboard Links */}
-            <div className="hidden lg:flex items-center gap-1">
               {isStaffOrAdmin && (
                 <button
                   type="button"
@@ -335,7 +491,7 @@ export default function App() {
                     window.history.pushState({}, "", "/staff");
                   }}
                   data-ocid="nav.link"
-                  className="px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors rounded"
+                  className="px-3 py-2 text-xs font-medium text-white hover:text-yellow-400 transition-colors rounded"
                 >
                   Staff Portal
                 </button>
@@ -348,27 +504,40 @@ export default function App() {
                     window.history.pushState({}, "", "/admin");
                   }}
                   data-ocid="nav.link"
-                  className="px-3 py-2 text-xs font-medium rounded font-semibold"
-                  style={{ color: "oklch(0.62 0.18 40)" }}
+                  className="px-3 py-2 text-xs font-semibold rounded"
+                  style={{ color: "#f5c842" }}
                 >
-                  Admin Dashboard
+                  Admin
                 </button>
               )}
-            </div>
+            </nav>
 
-            {/* Right Actions */}
+            {/* WhatsApp + Auth buttons */}
             <div className="hidden lg:flex items-center gap-2">
+              <a
+                href={WA_CHANNEL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-ocid="nav.secondary_button"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded border border-green-400 text-green-400 hover:bg-green-400 hover:text-white transition-colors"
+              >
+                \ud83d\udce2 WA Channel
+              </a>
+              <a
+                href={WA_GROUP}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-ocid="nav.primary_button"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded text-white transition-colors"
+                style={{ background: "#25D366" }}
+              >
+                \ud83d\udcac WA Group
+              </a>
               {isAuthenticated ? (
                 <>
-                  <div
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm"
-                    style={{ color: "oklch(0.20 0.008 260)" }}
-                  >
-                    <User size={14} style={{ color: "oklch(0.62 0.18 40)" }} />
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "#111111" }}
-                    >
+                  <div className="flex items-center gap-1.5 px-2 py-1.5 rounded text-sm text-white">
+                    <User size={14} style={{ color: "#f5c842" }} />
+                    <span className="text-xs font-medium text-white">
                       {displayName}
                     </span>
                   </div>
@@ -376,11 +545,7 @@ export default function App() {
                     type="button"
                     onClick={handleLogout}
                     data-ocid="nav.secondary_button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded transition-colors hover:text-gray-900"
-                    style={{
-                      borderColor: "oklch(0.78 0.003 260)",
-                      color: "oklch(0.40 0.008 260)",
-                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded text-white border-gray-400 hover:border-white transition-colors"
                   >
                     <LogOut size={13} />
                     Logout
@@ -391,30 +556,18 @@ export default function App() {
                   type="button"
                   onClick={openLogin}
                   data-ocid="nav.secondary_button"
-                  className="px-4 py-2 text-sm font-medium border rounded transition-colors hover:text-gray-700"
-                  style={{
-                    borderColor: "oklch(0.75 0.003 260)",
-                    color: "oklch(0.18 0.008 260)",
-                  }}
+                  className="px-4 py-1.5 text-sm font-medium border rounded text-white transition-colors"
+                  style={{ borderColor: "#f5c842", color: "#f5c842" }}
                 >
-                  Login / Register
+                  Admin Login
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setApplyOpen(true)}
-                data-ocid="nav.primary_button"
-                className="px-4 py-2 text-sm font-bold rounded text-white transition-opacity hover:opacity-90"
-                style={{ background: "oklch(0.62 0.18 40)" }}
-              >
-                APPLY NOW
-              </button>
             </div>
 
-            {/* Mobile Menu Toggle */}
+            {/* Mobile toggle */}
             <button
               type="button"
-              className="lg:hidden p-2 text-muted-foreground"
+              className="lg:hidden p-2 text-white"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
               data-ocid="nav.toggle"
@@ -427,58 +580,81 @@ export default function App() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div
-            className="lg:hidden border-t"
-            style={{
-              background: "oklch(0.99 0.003 260)",
-              borderColor: "oklch(0.82 0.003 260)",
-            }}
+            className="lg:hidden"
+            style={{ background: "#0d1b2e", borderTop: "1px solid #1e3150" }}
           >
             <nav className="px-4 py-3 flex flex-col gap-1">
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
-                  className={`px-3 py-2 text-sm font-medium rounded ${
-                    link.active ? "text-brand-orange" : "text-muted-foreground"
-                  }`}
+                  className="px-3 py-2 text-sm font-medium text-white hover:text-yellow-400 rounded"
                   onClick={() => setMobileMenuOpen(false)}
                   data-ocid="nav.link"
                 >
                   {link.label}
                 </a>
               ))}
+              {isStaffOrAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage("/staff");
+                    window.history.pushState({}, "", "/staff");
+                    setMobileMenuOpen(false);
+                  }}
+                  data-ocid="nav.link"
+                  className="px-3 py-2 text-xs font-medium text-white text-left hover:text-yellow-400"
+                >
+                  Staff Portal
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage("/admin");
+                    window.history.pushState({}, "", "/admin");
+                    setMobileMenuOpen(false);
+                  }}
+                  data-ocid="nav.link"
+                  className="px-3 py-2 text-xs font-semibold text-left"
+                  style={{ color: "#f5c842" }}
+                >
+                  Admin Dashboard
+                </button>
+              )}
               <div className="pt-2 flex flex-col gap-2">
+                <a
+                  href={WA_GROUP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-sm font-bold rounded text-white text-center"
+                  style={{ background: "#25D366" }}
+                >
+                  \ud83d\udcac Join WA Group
+                </a>
+                <a
+                  href={WA_CHANNEL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-sm font-bold rounded border border-green-400 text-green-400 text-center"
+                >
+                  \ud83d\udce2 WA Channel
+                </a>
                 {isAuthenticated ? (
-                  <>
-                    <div
-                      className="flex items-center gap-2 px-3 py-2 text-sm"
-                      style={{ color: "oklch(0.30 0.008 260)" }}
-                    >
-                      <User
-                        size={14}
-                        style={{ color: "oklch(0.62 0.18 40)" }}
-                      />
-                      <span className="text-xs" style={{ color: "#111111" }}>
-                        {displayName}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleLogout();
-                        setMobileMenuOpen(false);
-                      }}
-                      data-ocid="nav.secondary_button"
-                      className="flex items-center justify-center gap-2 px-4 py-2 text-sm border rounded"
-                      style={{
-                        borderColor: "oklch(0.78 0.003 260)",
-                        color: "oklch(0.40 0.008 260)",
-                      }}
-                    >
-                      <LogOut size={13} />
-                      Logout
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    data-ocid="nav.secondary_button"
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm border rounded text-white border-gray-500"
+                  >
+                    <LogOut size={13} />
+                    Logout ({displayName})
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -487,439 +663,362 @@ export default function App() {
                       setMobileMenuOpen(false);
                     }}
                     data-ocid="nav.secondary_button"
-                    className="px-4 py-2 text-sm border rounded"
-                    style={{
-                      borderColor: "oklch(0.75 0.003 260)",
-                      color: "oklch(0.18 0.008 260)",
-                    }}
+                    className="px-4 py-2 text-sm border rounded text-center"
+                    style={{ borderColor: "#f5c842", color: "#f5c842" }}
                   >
-                    Login / Register
+                    Admin Login
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setApplyOpen(true);
-                    setMobileMenuOpen(false);
-                  }}
-                  data-ocid="nav.primary_button"
-                  className="px-4 py-2 text-sm font-bold rounded text-white text-center"
-                  style={{ background: "oklch(0.62 0.18 40)" }}
-                >
-                  APPLY NOW
-                </button>
               </div>
             </nav>
           </div>
         )}
       </header>
 
-      {/* HERO */}
+      {/* ── HERO CAROUSEL ── */}
       <section
-        id="hero"
-        className="relative min-h-[600px] flex items-center"
-        style={{
-          backgroundImage: `url('/assets/generated/hero-banner.dim_1600x600.jpg')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        className="relative w-full overflow-hidden"
+        style={{ height: "600px", minHeight: "500px" }}
+        id="home"
       >
-        {/* Overlay */}
+        {/* Background */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url('/assets/generated/hero-banner.dim_1600x600.jpg')",
+          }}
+        />
+        {/* Gradient overlay - dark left, lighter right */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.15) 100%)",
+              "linear-gradient(to right, rgba(10,20,40,0.92) 0%, rgba(10,20,40,0.75) 50%, rgba(10,20,40,0.45) 100%)",
           }}
         />
-        <div className="relative z-10 max-w-7xl mx-auto px-4 lg:px-8 py-12 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-            {/* LEFT PANEL - Trust Elements */}
-            <div
-              className="lg:col-span-2"
-              style={{
-                background: "rgba(255,255,255,0.92)",
-                borderRadius: "16px",
-                padding: "24px",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              {/* Logo */}
-              <div className="flex justify-center mb-5">
-                <img
-                  src="/assets/uploads/nira_rebel_photo-019d1c52-1b51-77f0-b8ce-2159e2ba622a-1.jpeg"
-                  alt="Nira Rebel HR Agency PVT LTD"
-                  className="h-24 w-auto object-contain rounded-lg shadow"
-                  style={{ background: "white", padding: "6px" }}
-                />
-              </div>
 
-              {/* ISO Badge */}
+        {/* Slide content */}
+        <div className="relative h-full max-w-7xl mx-auto px-4 lg:px-8 flex items-end pb-14">
+          <div className="max-w-xl">
+            {CAROUSEL_SLIDES.map((slide, i) => (
               <div
-                className="flex flex-col items-center py-4 mb-1"
+                key={slide.badge}
+                className="transition-all duration-700"
                 style={{
-                  background: "oklch(0.97 0.02 145)",
-                  borderRadius: "12px",
-                  border: "2px solid oklch(0.75 0.12 145)",
+                  display: i === activeSlide ? "block" : "none",
                 }}
               >
-                <ShieldCheck
-                  size={36}
-                  style={{ color: "oklch(0.45 0.16 145)" }}
-                />
-                <p
-                  className="font-black text-base mt-1"
-                  style={{ color: "oklch(0.25 0.008 260)" }}
+                {/* Badge */}
+                <span
+                  className="inline-block text-xs font-black tracking-widest uppercase px-3 py-1.5 rounded-full mb-4"
+                  style={{ background: "#f5c842", color: "#0d1b2e" }}
                 >
-                  ISO Certified
-                </p>
-                <p
-                  className="text-xs mt-0.5"
-                  style={{ color: "oklch(0.45 0.008 260)" }}
-                >
-                  Quality Assured Recruitment
-                </p>
-              </div>
+                  {slide.badge}
+                </span>
 
-              {/* Divider */}
-              <div
-                className="my-4 border-t"
-                style={{ borderColor: "oklch(0.88 0.003 260)" }}
-              />
-
-              {/* Counters */}
-              <div className="flex gap-4">
-                <div className="flex-1 text-center">
-                  <p
-                    className="text-3xl font-black"
-                    style={{ color: "oklch(0.62 0.18 40)" }}
-                  >
-                    {candidatesCount.toLocaleString()}+
-                  </p>
-                  <p
-                    className="text-xs mt-1"
-                    style={{ color: "oklch(0.35 0.008 260)" }}
-                  >
-                    Registered Candidates
-                  </p>
-                </div>
-                <div
-                  className="w-px"
-                  style={{ background: "oklch(0.88 0.003 260)" }}
-                />
-                <div className="flex-1 text-center">
-                  <p
-                    className="text-3xl font-black"
-                    style={{ color: "oklch(0.62 0.18 40)" }}
-                  >
-                    {placementsCount.toLocaleString()}+
-                  </p>
-                  <p
-                    className="text-xs mt-1"
-                    style={{ color: "oklch(0.35 0.008 260)" }}
-                  >
-                    Successful Placements
-                  </p>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div
-                className="my-4 border-t"
-                style={{ borderColor: "oklch(0.88 0.003 260)" }}
-              />
-
-              {/* Client Logos */}
-              <div>
-                <p
-                  className="text-xs font-bold uppercase tracking-widest text-center mb-3"
-                  style={{ color: "oklch(0.45 0.008 260)" }}
-                >
-                  Our Clients
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <span
-                    className="px-3 py-1.5 rounded-full text-xs font-bold border"
-                    style={{
-                      background: "white",
-                      color: "#1a3a6b",
-                      borderColor: "#1a3a6b",
-                    }}
-                  >
-                    SBI
-                  </span>
-                  <span
-                    className="px-3 py-1.5 rounded-full text-xs font-bold border"
-                    style={{
-                      background: "white",
-                      color: "#1a5276",
-                      borderColor: "#1a5276",
-                    }}
-                  >
-                    PNB
-                  </span>
-                  <span
-                    className="px-3 py-1.5 rounded-full text-xs font-bold border"
-                    style={{
-                      background: "white",
-                      color: "#97144d",
-                      borderColor: "#97144d",
-                    }}
-                  >
-                    AXIS BANK
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT COLUMN - Main Content */}
-            <div className="lg:col-span-3">
-              <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
-                Connecting Talent with Opportunity in Delhi NCR
-              </h1>
-              <p
-                className="text-base md:text-lg mb-8"
-                style={{ color: "oklch(0.92 0.005 260)" }}
-              >
-                Your trusted recruitment partner for jobs at SBI Bank, PNB Bank,
-                Axis Bank, Hitachi, Metro, Blinkit and more.
-              </p>
-              <button
-                type="button"
-                onClick={() => setApplyOpen(true)}
-                data-ocid="hero.primary_button"
-                className="inline-block px-8 py-3 text-white font-bold text-sm tracking-wider rounded transition-opacity hover:opacity-90"
-                style={{ background: "oklch(0.62 0.18 40)" }}
-              >
-                EXPLORE JOBS NOW
-              </button>
-
-              {/* Search Form */}
-              <div
-                className="mt-10 p-5 rounded-lg"
-                style={{
-                  background: "rgba(255,255,255,0.95)",
-                  border: "1px solid oklch(0.88 0.003 260)",
-                }}
-              >
-                <p
-                  className="text-sm font-semibold mb-4"
-                  style={{ color: "oklch(0.62 0.18 40)" }}
-                >
-                  Find Your Next Career Move…
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <select
-                      data-ocid="hero.select"
-                      className="w-full px-3 py-2.5 text-sm rounded appearance-none pr-8"
-                      style={{
-                        background: "oklch(0.96 0.003 260)",
-                        border: "1px solid oklch(0.85 0.003 260)",
-                        color: "oklch(0.40 0.008 260)",
-                      }}
-                    >
-                      <option value="">Job Role</option>
-                      <option>ATM Operator</option>
-                      <option>Bank Sales Executive</option>
-                      <option>Delivery Executive</option>
-                      <option>Account Manager</option>
-                      <option>Floor Coordinator</option>
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: "oklch(0.45 0.008 260)" }}
-                    />
+                {/* Logo row */}
+                <div className="flex items-center gap-3 mb-4">
+                  <img
+                    src="/assets/uploads/nira_rebel_photo-019d1c52-1b51-77f0-b8ce-2159e2ba622a-1.jpeg"
+                    alt="Nira Rebel HR Agency"
+                    className="w-14 h-14 object-cover rounded-full border-2"
+                    style={{ borderColor: "#f5c842" }}
+                  />
+                  <div>
+                    <p className="text-white text-xs font-bold">
+                      Nira Rebel HR Agency
+                    </p>
+                    <p className="text-xs" style={{ color: "#a0b4c8" }}>
+                      Empowering Talent
+                    </p>
                   </div>
-                  <div className="flex-1 relative">
-                    <select
-                      data-ocid="hero.select"
-                      className="w-full px-3 py-2.5 text-sm rounded appearance-none pr-8"
-                      style={{
-                        background: "oklch(0.96 0.003 260)",
-                        border: "1px solid oklch(0.85 0.003 260)",
-                        color: "oklch(0.40 0.008 260)",
-                      }}
-                    >
-                      <option value="">Industry</option>
-                      <option>Banking</option>
-                      <option>E-commerce</option>
-                      <option>Logistics</option>
-                      <option>Metro / Transport</option>
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: "oklch(0.45 0.008 260)" }}
-                    />
-                  </div>
-                  <div className="flex-1 relative">
-                    <select
-                      data-ocid="hero.select"
-                      className="w-full px-3 py-2.5 text-sm rounded appearance-none pr-8"
-                      style={{
-                        background: "oklch(0.96 0.003 260)",
-                        border: "1px solid oklch(0.85 0.003 260)",
-                        color: "oklch(0.40 0.008 260)",
-                      }}
-                    >
-                      <option value="">Location</option>
-                      <option>New Delhi</option>
-                      <option>Gurugram</option>
-                      <option>Faridabad</option>
-                      <option>Noida</option>
-                    </select>
-                    <ChevronDown
-                      size={14}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ color: "oklch(0.45 0.008 260)" }}
-                    />
-                  </div>
+                </div>
+
+                {/* Heading */}
+                <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-1">
+                  {slide.heading}
+                </h1>
+                <p
+                  className="text-xl font-bold mb-3"
+                  style={{ color: "#f5c842" }}
+                >
+                  {slide.gold}
+                </p>
+                <p className="text-sm md:text-base text-white/80 mb-6 leading-relaxed">
+                  {slide.subtitle}
+                </p>
+
+                {/* CTA Buttons */}
+                <div className="flex gap-3 flex-wrap">
                   <button
                     type="button"
+                    onClick={() => setApplyOpen(true)}
                     data-ocid="hero.primary_button"
-                    className="px-6 py-2.5 text-sm font-bold text-white rounded whitespace-nowrap transition-opacity hover:opacity-90"
-                    style={{ background: "oklch(0.62 0.18 40)" }}
+                    className="px-6 py-2.5 text-sm font-bold rounded text-white transition-opacity hover:opacity-90"
+                    style={{ background: "#f5c842", color: "#0d1b2e" }}
                   >
-                    Search
+                    Our Services \u2192
                   </button>
+                  <a
+                    href="#about"
+                    data-ocid="hero.secondary_button"
+                    className="px-6 py-2.5 text-sm font-bold rounded border border-white text-white hover:bg-white hover:text-gray-900 transition-colors"
+                  >
+                    About Us
+                  </a>
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Prev/Next arrows */}
+        <button
+          type="button"
+          onClick={() =>
+            setActiveSlide(
+              (prev) =>
+                (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length,
+            )
+          }
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          style={{ background: "rgba(255,255,255,0.1)" }}
+          aria-label="Previous slide"
+          data-ocid="hero.pagination_prev"
+        >
+          <ChevronLeft size={22} />
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length)
+          }
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          style={{ background: "rgba(255,255,255,0.1)" }}
+          aria-label="Next slide"
+          data-ocid="hero.pagination_next"
+        >
+          <ChevronRight size={22} />
+        </button>
+
+        {/* Dot indicators */}
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+          {CAROUSEL_SLIDES.map((slide, i) => (
+            <button
+              type="button"
+              key={slide.badge}
+              onClick={() => setActiveSlide(i)}
+              className="w-2.5 h-2.5 rounded-full transition-all"
+              style={{
+                background:
+                  i === activeSlide ? "#f5c842" : "rgba(255,255,255,0.4)",
+                transform: i === activeSlide ? "scale(1.3)" : "scale(1)",
+              }}
+              aria-label={`Slide ${i + 1}`}
+            />
+          ))}
+        </div>
+
+        {/* Trust counters overlay (bottom right) */}
+        <div className="absolute bottom-5 right-6 hidden lg:flex gap-6">
+          <div className="text-center">
+            <p className="text-2xl font-black text-white">
+              {candidatesCount.toLocaleString()}+
+            </p>
+            <p className="text-xs text-white/70">Registered Candidates</p>
+          </div>
+          <div
+            className="w-px"
+            style={{ background: "rgba(255,255,255,0.3)" }}
+          />
+          <div className="text-center">
+            <p className="text-2xl font-black text-white">
+              {placementsCount.toLocaleString()}+
+            </p>
+            <p className="text-xs text-white/70">Successful Placements</p>
+          </div>
+          <div
+            className="w-px"
+            style={{ background: "rgba(255,255,255,0.3)" }}
+          />
+          <div className="text-center flex flex-col items-center">
+            <ShieldCheck size={22} className="text-yellow-400 mb-0.5" />
+            <p className="text-xs text-white font-bold">ISO Certified</p>
           </div>
         </div>
       </section>
 
-      {/* TOP CLIENTS & JOBS */}
-      <section
-        id="jobs"
-        className="py-16"
-        style={{ background: "oklch(0.99 0.003 260)" }}
-      >
+      {/* ── JOBS SECTION ── */}
+      <section id="jobs" className="py-14" style={{ background: "#f8f9fa" }}>
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <span
               className="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 rounded mb-3"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.15)",
-                color: "oklch(0.62 0.18 40)",
-              }}
+              style={{ background: "#fef3c7", color: "#b45309" }}
             >
-              Featured Jobs
+              Latest Openings
             </span>
-            <h2 className="font-serif text-3xl font-bold text-gray-900">
-              TOP CLIENTS &amp; JOBS
-            </h2>
+            <h2 className="text-3xl font-black text-gray-900">JOBS</h2>
           </div>
 
-          {/* Client Logos */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {CLIENT_LOGOS.map((client) => (
-              <div
-                key={client.name}
-                className="flex items-center justify-center px-5 py-3 rounded-lg min-w-[90px]"
+          {/* Filter Tabs */}
+          <div
+            className="flex flex-wrap gap-2 justify-center mb-8"
+            data-ocid="jobs.tab"
+          >
+            {JOB_FILTERS.map((filter) => (
+              <button
+                type="button"
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className="px-4 py-2 text-xs font-bold rounded-full border transition-all"
                 style={{
-                  background: client.bg,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  background: activeFilter === filter ? "#0d1b2e" : "#ffffff",
+                  color: activeFilter === filter ? "#ffffff" : "#374151",
+                  borderColor: activeFilter === filter ? "#0d1b2e" : "#d1d5db",
                 }}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+
+          {/* Job Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredJobs.length === 0 ? (
+              <div
+                className="col-span-3 text-center py-10 text-gray-400"
+                data-ocid="jobs.empty_state"
+              >
+                No jobs found for this category.
+              </div>
+            ) : (
+              filteredJobs.map((job, i) => (
+                <div
+                  key={`${job.title}-${job.company}`}
+                  data-ocid={`jobs.item.${i + 1}`}
+                  className="bg-white rounded-xl shadow-md p-5 flex flex-col gap-3 hover:shadow-lg transition-shadow"
+                >
+                  {/* Title + Category */}
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-black text-base text-gray-900">
+                      {job.title}
+                    </h3>
+                    <span
+                      className="px-2 py-1 text-[10px] font-bold rounded-full flex-shrink-0 text-white"
+                      style={{ background: job.categoryColor }}
+                    >
+                      {job.category}
+                    </span>
+                  </div>
+
+                  {/* Company */}
+                  <div className="flex items-center gap-1.5 text-sm text-gray-700">
+                    <span>\ud83c\udfe2</span>
+                    <span className="font-semibold">{job.company}</span>
+                  </div>
+
+                  {/* Location */}
+                  <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                    <MapPin size={13} className="text-gray-400" />
+                    <span>{job.location}</span>
+                  </div>
+
+                  {/* Address */}
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <span>\ud83c\udfe2</span>
+                    <span>{job.address}</span>
+                  </div>
+
+                  {/* Salary */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-black text-gray-900">
+                      {job.salary}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                    {job.description}
+                  </p>
+
+                  {/* Apply Button */}
+                  <button
+                    type="button"
+                    onClick={() => openApplyWithJob(job.title)}
+                    data-ocid={`jobs.item.${i + 1}`}
+                    className="w-full py-2.5 text-sm font-bold rounded text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mt-auto"
+                    style={{ background: "#25a244" }}
+                  >
+                    \ud83d\udcac Apply Now
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CLIENT LOGOS STRIP ── */}
+      <section className="py-8 bg-white border-t border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">
+            Trusted By Top Employers
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            {[
+              { name: "SBI", color: "#1a3a6b" },
+              { name: "PNB", color: "#1a5276" },
+              { name: "AXIS BANK", color: "#97144d" },
+              { name: "HITACHI", color: "#d32f2f" },
+              { name: "METRO", color: "#1565c0" },
+              { name: "BLINKIT", color: "#f9a825" },
+            ].map((c) => (
+              <div
+                key={c.name}
+                className="px-5 py-2.5 rounded-lg bg-white shadow-sm border border-gray-100"
               >
                 <span
                   className="font-black text-sm tracking-wider"
-                  style={{ color: client.color }}
+                  style={{ color: c.color }}
                 >
-                  {client.name}
+                  {c.name}
                 </span>
               </div>
             ))}
           </div>
-
-          {/* Job Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {FEATURED_JOBS.map((job, i) => (
-              <div
-                key={job.title}
-                data-ocid={`jobs.item.${i + 1}`}
-                className="p-4 rounded-lg flex flex-col gap-2 transition-transform hover:-translate-y-0.5"
-                style={{
-                  background: "oklch(0.96 0.003 260)",
-                  border: "1px solid oklch(0.88 0.003 260)",
-                }}
-              >
-                <h3 className="font-sans font-semibold text-sm text-gray-900 leading-tight">
-                  {job.title}
-                </h3>
-                <p
-                  className="text-xs"
-                  style={{ color: "oklch(0.40 0.008 260)" }}
-                >
-                  {job.company}
-                </p>
-                <div
-                  className="flex items-center gap-1 text-xs"
-                  style={{ color: "oklch(0.45 0.008 260)" }}
-                >
-                  <MapPin size={11} />
-                  {job.location}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm((prev) => ({ ...prev, position: job.title }));
-                    setApplyOpen(true);
-                  }}
-                  data-ocid={`jobs.item.${i + 1}`}
-                  className="mt-auto text-xs font-bold px-3 py-1.5 rounded transition-opacity hover:opacity-80 text-white w-fit"
-                  style={{ background: "oklch(0.62 0.18 40)" }}
-                >
-                  Apply
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* OUR EXPERTISE */}
+      {/* ── EXPERTISE ── */}
       <section
-        id="candidates"
-        className="py-16"
-        style={{ background: "oklch(0.97 0.003 260)" }}
+        id="expertise"
+        className="py-14"
+        style={{ background: "#f8f9fa" }}
       >
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
             <span
               className="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 rounded mb-3"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.15)",
-                color: "oklch(0.62 0.18 40)",
-              }}
+              style={{ background: "#fef3c7", color: "#b45309" }}
             >
               What We Do
             </span>
-            <h2 className="font-serif text-3xl font-bold text-gray-900">
-              OUR EXPERTISE
-            </h2>
+            <h2 className="text-3xl font-black text-gray-900">OUR EXPERTISE</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {EXPERTISE.map((item, i) => (
               <div
                 key={item.title}
                 data-ocid={`expertise.item.${i + 1}`}
-                className="p-6 rounded-lg text-center"
-                style={{
-                  background: "oklch(0.99 0.003 260)",
-                  border: "1px solid oklch(0.88 0.003 260)",
-                }}
+                className="p-6 rounded-xl text-center bg-white shadow-sm border border-gray-100"
               >
                 <div className="text-3xl mb-4">{item.icon}</div>
-                <h3 className="font-sans font-bold text-sm tracking-wide uppercase mb-2 text-gray-900">
+                <h3 className="font-bold text-sm tracking-wide uppercase mb-2 text-gray-900">
                   {item.title}
                 </h3>
-                <p
-                  className="text-xs leading-relaxed"
-                  style={{ color: "oklch(0.40 0.008 260)" }}
-                >
+                <p className="text-xs leading-relaxed text-gray-500">
                   {item.desc}
                 </p>
               </div>
@@ -928,23 +1027,17 @@ export default function App() {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section
-        className="py-16"
-        style={{ background: "oklch(0.99 0.003 260)" }}
-      >
+      {/* ── TESTIMONIALS ── */}
+      <section className="py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
             <span
               className="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 rounded mb-3"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.15)",
-                color: "oklch(0.62 0.18 40)",
-              }}
+              style={{ background: "#fef3c7", color: "#b45309" }}
             >
               Success Stories
             </span>
-            <h2 className="font-serif text-3xl font-bold text-gray-900">
+            <h2 className="text-3xl font-black text-gray-900">
               CANDIDATE TESTIMONIALS
             </h2>
           </div>
@@ -953,32 +1046,25 @@ export default function App() {
               <div
                 key={t.name}
                 data-ocid={`testimonials.item.${i + 1}`}
-                className="p-6 rounded-lg"
-                style={{
-                  background: "oklch(0.96 0.003 260)",
-                  border: "1px solid oklch(0.88 0.003 260)",
-                }}
+                className="p-6 rounded-xl bg-gray-50 border border-gray-100"
               >
                 <div className="flex gap-1 mb-4">
                   {[1, 2, 3, 4, 5].map((si) => (
                     <Star
                       key={si}
                       size={14}
-                      fill="oklch(0.62 0.18 40)"
-                      style={{ color: "oklch(0.62 0.18 40)" }}
+                      fill="#f5c842"
+                      style={{ color: "#f5c842" }}
                     />
                   ))}
                 </div>
-                <p
-                  className="text-sm leading-relaxed mb-5"
-                  style={{ color: "oklch(0.30 0.008 260)" }}
-                >
+                <p className="text-sm leading-relaxed mb-5 text-gray-600">
                   &ldquo;{t.text}&rdquo;
                 </p>
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                    style={{ background: "oklch(0.62 0.18 40)" }}
+                    style={{ background: "#0d1b2e" }}
                   >
                     {t.initials}
                   </div>
@@ -986,12 +1072,7 @@ export default function App() {
                     <p className="font-semibold text-sm text-gray-900">
                       {t.name}
                     </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "oklch(0.45 0.008 260)" }}
-                    >
-                      {t.role}
-                    </p>
+                    <p className="text-xs text-gray-500">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -1000,24 +1081,17 @@ export default function App() {
         </div>
       </section>
 
-      {/* BLOG */}
-      <section
-        id="blog"
-        className="py-16"
-        style={{ background: "oklch(0.97 0.003 260)" }}
-      >
+      {/* ── BLOG ── */}
+      <section id="blog" className="py-14" style={{ background: "#f8f9fa" }}>
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="text-center mb-10">
             <span
               className="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 rounded mb-3"
-              style={{
-                background: "oklch(0.62 0.18 40 / 0.15)",
-                color: "oklch(0.62 0.18 40)",
-              }}
+              style={{ background: "#fef3c7", color: "#b45309" }}
             >
               Knowledge Hub
             </span>
-            <h2 className="font-serif text-3xl font-bold text-gray-900">
+            <h2 className="text-3xl font-black text-gray-900">
               RECENT INDUSTRY INSIGHTS
             </h2>
           </div>
@@ -1026,34 +1100,27 @@ export default function App() {
               <div
                 key={post.title}
                 data-ocid={`blog.item.${i + 1}`}
-                className="rounded-lg overflow-hidden transition-transform hover:-translate-y-1"
-                style={{
-                  background: "oklch(0.99 0.003 260)",
-                  border: "1px solid oklch(0.88 0.003 260)",
-                }}
+                className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-100 hover:-translate-y-1 transition-transform"
               >
                 <div className="aspect-video overflow-hidden">
                   <img
                     src={post.image}
                     alt={post.title}
-                    className="w-full h-full object-cover transition-transform hover:scale-105"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform"
                   />
                 </div>
                 <div className="p-5">
-                  <h3 className="font-serif font-bold text-base text-gray-900 mb-2 leading-snug">
+                  <h3 className="font-bold text-base text-gray-900 mb-2 leading-snug">
                     {post.title}
                   </h3>
-                  <p
-                    className="text-xs leading-relaxed mb-4"
-                    style={{ color: "oklch(0.40 0.008 260)" }}
-                  >
+                  <p className="text-xs leading-relaxed mb-4 text-gray-500">
                     {post.excerpt}
                   </p>
                   <a
                     href="#blog"
                     data-ocid={`blog.item.${i + 1}`}
-                    className="text-xs font-bold transition-opacity hover:opacity-80"
-                    style={{ color: "oklch(0.62 0.18 40)" }}
+                    className="text-xs font-bold hover:opacity-80 transition-opacity"
+                    style={{ color: "#b45309" }}
                   >
                     Learn More &rsaquo;
                   </a>
@@ -1064,70 +1131,56 @@ export default function App() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer
-        style={{
-          background: "oklch(0.97 0.003 260)",
-          borderTop: "1px solid oklch(0.88 0.003 260)",
-        }}
-      >
+      {/* ── FOOTER ── */}
+      <footer style={{ background: "#0d1b2e" }}>
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Column 1: Logo + desc */}
+            {/* Column 1 */}
             <div>
               <div className="mb-4">
                 <img
                   src="/assets/uploads/nira_rebel_photo-019d1c52-1b51-77f0-b8ce-2159e2ba622a-1.jpeg"
                   alt="Nira Rebel HR Agency PVT LTD"
-                  className="h-14 w-auto object-contain"
+                  className="h-14 w-auto object-contain rounded"
                 />
               </div>
-              <p
-                className="text-xs leading-relaxed"
-                style={{ color: "oklch(0.45 0.008 260)" }}
-              >
-                Empowering Talent • Innovating Recruitment — Professional HR
-                recruitment agency in New Delhi, connecting talent with India's
-                top employers.
+              <p className="text-xs leading-relaxed text-gray-400">
+                Empowering Talent \u2022 Innovating Recruitment \u2014
+                Professional HR recruitment agency in New Delhi, connecting
+                talent with India&apos;s top employers.
               </p>
             </div>
 
             {/* Column 2: Contact */}
             <div>
-              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-gray-800">
+              <h4 className="font-bold text-xs tracking-widest uppercase mb-4 text-white">
                 Contact Us
               </h4>
               <div className="flex flex-col gap-3">
                 <div className="flex items-start gap-2">
                   <MapPin
                     size={13}
-                    className="mt-0.5 flex-shrink-0"
-                    style={{ color: "oklch(0.62 0.18 40)" }}
+                    className="mt-0.5 flex-shrink-0 text-yellow-400"
                   />
-                  <p
-                    className="text-xs leading-relaxed"
-                    style={{ color: "oklch(0.45 0.008 260)" }}
-                  >
+                  <p className="text-xs leading-relaxed text-gray-400">
                     38, Central Ave, Pocket C, Raju Park, Sangam Vihar, New
                     Delhi 110080
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Phone size={13} style={{ color: "oklch(0.62 0.18 40)" }} />
+                  <Phone size={13} className="text-yellow-400" />
                   <a
                     href="tel:+919891331853"
-                    className="text-xs"
-                    style={{ color: "oklch(0.45 0.008 260)" }}
+                    className="text-xs text-gray-400 hover:text-white"
                   >
                     +91-9891331853
                   </a>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Mail size={13} style={{ color: "oklch(0.62 0.18 40)" }} />
+                  <Mail size={13} className="text-yellow-400" />
                   <a
                     href="mailto:rebelhrjobs1451@gmail.com"
-                    className="text-xs break-all"
-                    style={{ color: "oklch(0.45 0.008 260)" }}
+                    className="text-xs break-all text-gray-400 hover:text-white"
                   >
                     rebelhrjobs1451@gmail.com
                   </a>
@@ -1137,7 +1190,7 @@ export default function App() {
 
             {/* Column 3: Quick Links */}
             <div>
-              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-gray-800">
+              <h4 className="font-bold text-xs tracking-widest uppercase mb-4 text-white">
                 Quick Links
               </h4>
               <ul className="flex flex-col gap-2">
@@ -1146,8 +1199,7 @@ export default function App() {
                     <a
                       href="#top"
                       data-ocid="footer.link"
-                      className="text-xs transition-colors hover:text-brand-orange"
-                      style={{ color: "oklch(0.45 0.008 260)" }}
+                      className="text-xs text-gray-400 hover:text-yellow-400 transition-colors"
                     >
                       {link}
                     </a>
@@ -1156,24 +1208,40 @@ export default function App() {
               </ul>
             </div>
 
-            {/* Column 4: Social */}
+            {/* Column 4: Social + WhatsApp */}
             <div>
-              <h4 className="font-sans font-bold text-xs tracking-widest uppercase mb-4 text-gray-800">
-                Social Media
+              <h4 className="font-bold text-xs tracking-widest uppercase mb-4 text-white">
+                Connect With Us
               </h4>
               <div className="flex flex-col gap-3">
+                <a
+                  href={WA_GROUP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ocid="footer.link"
+                  className="flex items-center gap-2 text-xs text-gray-400 hover:text-green-400 transition-colors"
+                >
+                  <span className="text-green-400">\ud83d\udcac</span> WhatsApp
+                  Group
+                </a>
+                <a
+                  href={WA_CHANNEL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ocid="footer.link"
+                  className="flex items-center gap-2 text-xs text-gray-400 hover:text-green-400 transition-colors"
+                >
+                  <span className="text-green-400">\ud83d\udce2</span> WhatsApp
+                  Channel
+                </a>
                 <a
                   href="https://instagram.com/reblehr.agency"
                   target="_blank"
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
-                  className="flex items-center gap-2 text-xs transition-colors hover:text-brand-orange"
-                  style={{ color: "oklch(0.45 0.008 260)" }}
+                  className="flex items-center gap-2 text-xs text-gray-400 hover:text-yellow-400 transition-colors"
                 >
-                  <Instagram
-                    size={15}
-                    style={{ color: "oklch(0.62 0.18 40)" }}
-                  />
+                  <Instagram size={15} className="text-yellow-400" />
                   @reblehr.agency
                 </a>
                 <a
@@ -1181,13 +1249,9 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
-                  className="flex items-center gap-2 text-xs transition-colors hover:text-brand-orange"
-                  style={{ color: "oklch(0.45 0.008 260)" }}
+                  className="flex items-center gap-2 text-xs text-gray-400 hover:text-yellow-400 transition-colors"
                 >
-                  <Linkedin
-                    size={15}
-                    style={{ color: "oklch(0.62 0.18 40)" }}
-                  />
+                  <Linkedin size={15} className="text-yellow-400" />
                   Arun Rebel
                 </a>
                 <a
@@ -1195,13 +1259,9 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
-                  className="flex items-center gap-2 text-xs transition-colors hover:text-brand-orange"
-                  style={{ color: "oklch(0.45 0.008 260)" }}
+                  className="flex items-center gap-2 text-xs text-gray-400 hover:text-yellow-400 transition-colors"
                 >
-                  <Facebook
-                    size={15}
-                    style={{ color: "oklch(0.62 0.18 40)" }}
-                  />
+                  <Facebook size={15} className="text-yellow-400" />
                   Facebook
                 </a>
               </div>
@@ -1210,20 +1270,19 @@ export default function App() {
         </div>
 
         {/* Copyright */}
-        <div style={{ borderTop: "1px solid oklch(0.88 0.003 260)" }}>
+        <div style={{ borderTop: "1px solid #1e3150" }}>
           <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-xs" style={{ color: "oklch(0.75 0.003 260)" }}>
+            <p className="text-xs text-gray-500">
               &copy; {new Date().getFullYear()} Nira Rebel HR Agency PVT LTD.
               All rights reserved.
             </p>
-            <p className="text-xs" style={{ color: "oklch(0.50 0.006 260)" }}>
-              Built with ❤️ using{" "}
+            <p className="text-xs text-gray-600">
+              Built with \u2764\ufe0f using{" "}
               <a
                 href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline"
-                style={{ color: "oklch(0.45 0.008 260)" }}
+                className="hover:underline text-gray-400"
               >
                 caffeine.ai
               </a>
@@ -1232,42 +1291,97 @@ export default function App() {
         </div>
       </footer>
 
-      {/* APPLY NOW MODAL */}
+      {/* ── FLOATING SOCIAL BUTTONS (right side) ── */}
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 pr-1">
+        <a
+          href={WA_GROUP}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="WhatsApp Group"
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg text-white text-lg hover:scale-110 transition-transform"
+          style={{ background: "#25D366" }}
+        >
+          \ud83d\udcac
+        </a>
+        <a
+          href="#candidates"
+          title="Candidates"
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg text-white hover:scale-110 transition-transform"
+          style={{ background: "#ea580c" }}
+        >
+          <Users size={18} />
+        </a>
+        <a
+          href="https://instagram.com/reblehr.agency"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Instagram"
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg text-white hover:scale-110 transition-transform"
+          style={{
+            background:
+              "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
+          }}
+        >
+          <Instagram size={18} />
+        </a>
+        <a
+          href="https://linkedin.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="LinkedIn"
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg text-white hover:scale-110 transition-transform"
+          style={{ background: "#0077b5" }}
+        >
+          <Linkedin size={18} />
+        </a>
+        <a
+          href="https://facebook.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Facebook"
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg text-white hover:scale-110 transition-transform"
+          style={{ background: "#1877f2" }}
+        >
+          <Facebook size={18} />
+        </a>
+      </div>
+
+      {/* ── LOGIN/REGISTER MODAL ── */}
+      <LoginRegisterModal
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        defaultTab={authTab}
+      />
+
+      {/* ── APPLY NOW MODAL ── */}
       <Dialog open={applyOpen} onOpenChange={handleCloseModal}>
         <DialogContent
-          className="max-w-lg max-h-[90vh] overflow-y-auto"
-          style={{
-            background: "oklch(0.99 0.003 260)",
-            border: "1px solid oklch(0.85 0.003 260)",
-          }}
+          className="max-w-lg max-h-[90vh] overflow-y-auto bg-white"
           data-ocid="apply.modal"
         >
           <DialogHeader>
-            <DialogTitle className="font-serif text-gray-900 text-xl">
-              Apply Now
+            <DialogTitle className="text-gray-900 text-xl font-bold">
+              Apply Now{applyJobTitle ? ` — ${applyJobTitle}` : ""}
             </DialogTitle>
           </DialogHeader>
 
           {submitted ? (
             <div className="py-10 text-center" data-ocid="apply.success_state">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"
-                style={{ background: "oklch(0.62 0.18 40 / 0.15)" }}
-              >
-                ✅
+              <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 bg-green-100">
+                \u2705
               </div>
-              <h3 className="font-serif text-xl text-gray-900 mb-2">
+              <h3 className="text-xl text-gray-900 font-bold mb-2">
                 Application Submitted!
               </h3>
-              <p className="text-sm" style={{ color: "oklch(0.40 0.008 260)" }}>
+              <p className="text-sm text-gray-500">
                 Thank you for applying. Our team will contact you shortly.
               </p>
               <button
                 type="button"
                 onClick={handleCloseModal}
                 data-ocid="apply.close_button"
-                className="mt-6 px-6 py-2.5 text-sm font-bold text-white rounded transition-opacity hover:opacity-90"
-                style={{ background: "oklch(0.62 0.18 40)" }}
+                className="mt-6 px-6 py-2.5 text-sm font-bold text-white rounded hover:opacity-90 transition-opacity"
+                style={{ background: "#25a244" }}
               >
                 Close
               </button>
@@ -1277,7 +1391,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label
-                    className="text-xs text-muted-foreground mb-1 block"
+                    className="text-xs text-gray-600 mb-1 block"
                     htmlFor="apply-name"
                   >
                     Full Name *
@@ -1289,17 +1403,12 @@ export default function App() {
                     onChange={(e) => handleFormChange("name", e.target.value)}
                     placeholder="Your name"
                     data-ocid="apply.input"
-                    className="text-sm"
-                    style={{
-                      background: "oklch(0.96 0.003 260)",
-                      borderColor: "oklch(0.82 0.003 260)",
-                      color: "#111",
-                    }}
+                    className="text-sm text-gray-900"
                   />
                 </div>
                 <div>
                   <Label
-                    className="text-xs text-muted-foreground mb-1 block"
+                    className="text-xs text-gray-600 mb-1 block"
                     htmlFor="apply-phone"
                   >
                     Phone *
@@ -1309,21 +1418,15 @@ export default function App() {
                     required
                     value={form.phone}
                     onChange={(e) => handleFormChange("phone", e.target.value)}
-                    placeholder="+91-XXXXXXXXXX"
+                    placeholder="10-digit number"
                     data-ocid="apply.input"
-                    className="text-sm"
-                    style={{
-                      background: "oklch(0.96 0.003 260)",
-                      borderColor: "oklch(0.82 0.003 260)",
-                      color: "#111",
-                    }}
+                    className="text-sm text-gray-900"
                   />
                 </div>
               </div>
-
               <div>
                 <Label
-                  className="text-xs text-muted-foreground mb-1 block"
+                  className="text-xs text-gray-600 mb-1 block"
                   htmlFor="apply-email"
                 >
                   Email
@@ -1335,54 +1438,39 @@ export default function App() {
                   onChange={(e) => handleFormChange("email", e.target.value)}
                   placeholder="your@email.com"
                   data-ocid="apply.input"
-                  className="text-sm"
-                  style={{
-                    background: "oklch(0.96 0.003 260)",
-                    borderColor: "oklch(0.82 0.003 260)",
-                    color: "#111",
-                  }}
+                  className="text-sm text-gray-900"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label
-                    className="text-xs text-muted-foreground mb-1 block"
+                    className="text-xs text-gray-600 mb-1 block"
                     htmlFor="apply-age"
                   >
                     Age
                   </Label>
                   <Input
                     id="apply-age"
-                    type="number"
-                    min="18"
-                    max="60"
                     value={form.age}
                     onChange={(e) => handleFormChange("age", e.target.value)}
-                    placeholder="Age"
+                    placeholder="e.g. 25"
                     data-ocid="apply.input"
-                    className="text-sm"
-                    style={{
-                      background: "oklch(0.96 0.003 260)",
-                      borderColor: "oklch(0.82 0.003 260)",
-                      color: "#111",
-                    }}
+                    className="text-sm text-gray-900"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">
+                  <Label
+                    className="text-xs text-gray-600 mb-1 block"
+                    htmlFor="apply-gender"
+                  >
                     Gender
                   </Label>
                   <select
+                    id="apply-gender"
                     value={form.gender}
                     onChange={(e) => handleFormChange("gender", e.target.value)}
                     data-ocid="apply.select"
-                    className="w-full px-3 py-2 text-sm rounded"
-                    style={{
-                      background: "oklch(0.96 0.003 260)",
-                      border: "1px solid oklch(0.85 0.003 260)",
-                      color: "#111",
-                    }}
+                    className="w-full px-3 py-2 text-sm rounded border border-gray-200 text-gray-900 bg-white"
                   >
                     <option value="">Select</option>
                     <option>Male</option>
@@ -1391,108 +1479,80 @@ export default function App() {
                   </select>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">
+                  <Label
+                    className="text-xs text-gray-600 mb-1 block"
+                    htmlFor="apply-qual"
+                  >
                     Qualification
                   </Label>
-                  <select
+                  <Input
+                    id="apply-qual"
                     value={form.qualification}
                     onChange={(e) =>
                       handleFormChange("qualification", e.target.value)
                     }
-                    data-ocid="apply.select"
-                    className="w-full px-3 py-2 text-sm rounded"
-                    style={{
-                      background: "oklch(0.96 0.003 260)",
-                      border: "1px solid oklch(0.85 0.003 260)",
-                      color: "#111",
-                    }}
-                  >
-                    <option value="">Select</option>
-                    <option>10th Pass</option>
-                    <option>12th Pass</option>
-                    <option>Graduate</option>
-                    <option>Post Graduate</option>
-                  </select>
+                    placeholder="e.g. B.Com"
+                    data-ocid="apply.input"
+                    className="text-sm text-gray-900"
+                  />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">
+                  <Label
+                    className="text-xs text-gray-600 mb-1 block"
+                    htmlFor="apply-exp"
+                  >
                     Experience
                   </Label>
-                  <select
+                  <Input
+                    id="apply-exp"
                     value={form.experience}
                     onChange={(e) =>
                       handleFormChange("experience", e.target.value)
                     }
-                    data-ocid="apply.select"
-                    className="w-full px-3 py-2 text-sm rounded"
-                    style={{
-                      background: "oklch(0.96 0.003 260)",
-                      border: "1px solid oklch(0.85 0.003 260)",
-                      color: "#111",
-                    }}
-                  >
-                    <option value="">Select</option>
-                    <option>Fresher</option>
-                    <option>0–1 Year</option>
-                    <option>1–3 Years</option>
-                    <option>3+ Years</option>
-                  </select>
+                    placeholder="e.g. 2 years"
+                    data-ocid="apply.input"
+                    className="text-sm text-gray-900"
+                  />
                 </div>
               </div>
-
               <div>
                 <Label
-                  className="text-xs text-muted-foreground mb-1 block"
+                  className="text-xs text-gray-600 mb-1 block"
                   htmlFor="apply-position"
                 >
-                  Position Applying For *
+                  Position Applied For *
                 </Label>
                 <Input
                   id="apply-position"
                   required
                   value={form.position}
                   onChange={(e) => handleFormChange("position", e.target.value)}
-                  placeholder="e.g. ATM Operator, Bank Sales Executive"
+                  placeholder="Job title"
                   data-ocid="apply.input"
-                  className="text-sm"
-                  style={{
-                    background: "oklch(0.96 0.003 260)",
-                    borderColor: "oklch(0.82 0.003 260)",
-                    color: "#111",
-                  }}
+                  className="text-sm text-gray-900"
                 />
               </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">
-                  Preferred Location
-                </Label>
-                <select
-                  value={form.location}
-                  onChange={(e) => handleFormChange("location", e.target.value)}
-                  data-ocid="apply.select"
-                  className="w-full px-3 py-2 text-sm rounded"
-                  style={{
-                    background: "oklch(0.96 0.003 260)",
-                    border: "1px solid oklch(0.85 0.003 260)",
-                    color: "#111",
-                  }}
-                >
-                  <option value="">Select Location</option>
-                  <option>New Delhi</option>
-                  <option>Gurugram</option>
-                  <option>Faridabad</option>
-                  <option>Noida</option>
-                  <option>Delhi NCR</option>
-                </select>
-              </div>
-
               <div>
                 <Label
-                  className="text-xs text-muted-foreground mb-1 block"
+                  className="text-xs text-gray-600 mb-1 block"
+                  htmlFor="apply-location"
+                >
+                  Preferred Location
+                </Label>
+                <Input
+                  id="apply-location"
+                  value={form.location}
+                  onChange={(e) => handleFormChange("location", e.target.value)}
+                  placeholder="e.g. New Delhi"
+                  data-ocid="apply.input"
+                  className="text-sm text-gray-900"
+                />
+              </div>
+              <div>
+                <Label
+                  className="text-xs text-gray-600 mb-1 block"
                   htmlFor="apply-message"
                 >
                   Additional Message
@@ -1501,51 +1561,29 @@ export default function App() {
                   id="apply-message"
                   value={form.message}
                   onChange={(e) => handleFormChange("message", e.target.value)}
-                  placeholder="Anything else you'd like us to know..."
+                  placeholder="Tell us about yourself…"
                   rows={3}
                   data-ocid="apply.textarea"
-                  className="text-sm resize-none"
-                  style={{
-                    background: "oklch(0.96 0.003 260)",
-                    borderColor: "oklch(0.82 0.003 260)",
-                    color: "#111",
-                  }}
+                  className="text-sm text-gray-900"
                 />
               </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  data-ocid="apply.cancel_button"
-                  className="flex-1 py-2.5 text-sm font-medium rounded border transition-colors"
-                  style={{
-                    borderColor: "oklch(0.78 0.003 260)",
-                    color: "oklch(0.40 0.008 260)",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  data-ocid="apply.submit_button"
-                  className="flex-1 py-2.5 text-sm font-bold text-white rounded transition-opacity hover:opacity-90"
-                  style={{ background: "oklch(0.62 0.18 40)" }}
-                >
-                  Submit Application
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={submitDirectApp.isPending}
+                data-ocid="apply.submit_button"
+                className="w-full py-3 text-sm font-bold text-white rounded hover:opacity-90 transition-opacity disabled:opacity-60"
+                style={{ background: "#25a244" }}
+              >
+                {submitDirectApp.isPending
+                  ? "Submitting…"
+                  : "Submit Application"}
+              </button>
             </form>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* LOGIN / REGISTER MODAL */}
-      <LoginRegisterModal
-        open={authOpen}
-        onOpenChange={setAuthOpen}
-        defaultTab={authTab}
-      />
+      <Toaster />
     </div>
   );
 }
