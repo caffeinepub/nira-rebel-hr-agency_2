@@ -162,7 +162,7 @@ export default function LoginRegisterModal({
   const inputStyle = {
     background: "oklch(0.96 0.003 260)",
     borderColor: "oklch(0.82 0.003 260)",
-    color: "white",
+    color: "#000000",
   };
 
   return (

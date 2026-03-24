@@ -1229,7 +1229,7 @@ export default function App() {
                   WhatsApp Channel
                 </a>
                 <a
-                  href="https://instagram.com/reblehr.agency"
+                  href="https://www.instagram.com/nirareblehr.agency?igsh=MXB2YmJ4ZDMxZjJmeA=="
                   target="_blank"
                   rel="noopener noreferrer"
                   data-ocid="footer.link"
@@ -1306,7 +1306,7 @@ export default function App() {
           <Users size={18} />
         </a>
         <a
-          href="https://instagram.com/reblehr.agency"
+          href="https://www.instagram.com/nirareblehr.agency?igsh=MXB2YmJ4ZDMxZjJmeA=="
           target="_blank"
           rel="noopener noreferrer"
           title="Instagram"

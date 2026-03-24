@@ -75,6 +75,9 @@ export default function AdminDashboard() {
     ? identity.getPrincipal().toString()
     : null;
 
+  // Controlled tab state — fixes unresponsive tab switching
+  const [activeTab, setActiveTab] = useState("overview");
+
   const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
   const { data: users = [], isLoading: loadingUsers } = useListAllUsers({
     enabled: isAdmin === true,
@@ -166,6 +169,10 @@ export default function AdminDashboard() {
   const [showStaffPassword, setShowStaffPassword] = useState(false);
 
   const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
+
+  // Null-safe arrays for stats
+  const safeDirectApps = directApplications || [];
+  const safeApplications = applications || [];
 
   // Auto-attempt seed ONLY when user is authenticated with a real (non-anonymous) identity
   useEffect(() => {
@@ -370,8 +377,12 @@ export default function AdminDashboard() {
           data-ocid="admin.error_state"
           className="text-center p-8 max-w-sm w-full"
         >
-          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck size={28} className="text-red-400" />
+          <div className="flex justify-center mb-4">
+            <img
+              src="/assets/uploads/nira_rebel_photo-019d1f7f-8eb3-7143-b4a4-abb72c418f74-1.jpeg"
+              alt="Nira Rebel Shield Logo"
+              style={{ height: "80px", width: "auto", objectFit: "contain" }}
+            />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
             Access Denied
@@ -388,7 +399,7 @@ export default function AdminDashboard() {
               <Loader2
                 className="animate-spin"
                 size={16}
-                style={{ color: "oklch(0.62 0.18 40)" }}
+                style={{ color: "#5BB8D4" }}
               />
               Activating admin access...
             </div>
@@ -410,7 +421,7 @@ export default function AdminDashboard() {
                 disabled={seeding || !seedEmail.trim()}
                 data-ocid="admin.primary_button"
                 className="w-full text-white"
-                style={{ background: "oklch(0.62 0.18 40)" }}
+                style={{ background: "#5BB8D4" }}
               >
                 {seeding ? (
                   <>
@@ -428,7 +439,7 @@ export default function AdminDashboard() {
             href="/"
             data-ocid="admin.link"
             className="inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-medium text-white"
-            style={{ background: "oklch(0.62 0.18 40)" }}
+            style={{ background: "#5BB8D4" }}
           >
             <ArrowLeft size={14} /> Back to Home
           </a>
@@ -483,7 +494,8 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
-        <Tabs defaultValue="overview">
+        {/* Controlled Tabs — fixes unresponsive switching */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList
             className="mb-8 h-11"
             style={{
@@ -494,14 +506,14 @@ export default function AdminDashboard() {
             <TabsTrigger
               value="overview"
               data-ocid="admin.tab"
-              className="px-6 text-sm font-medium data-[state=active]:text-white"
+              className="px-6 text-sm font-semibold text-gray-800 data-[state=active]:bg-[#5BB8D4] data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="staff-management"
               data-ocid="admin.tab"
-              className="px-6 text-sm font-medium data-[state=active]:text-white"
+              className="px-6 text-sm font-semibold text-gray-800 data-[state=active]:bg-[#5BB8D4] data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               <Users size={15} className="mr-1.5" />
               Staff Management
@@ -516,19 +528,19 @@ export default function AdminDashboard() {
                 { label: "Total Users", value: users.length, icon: "👤" },
                 {
                   label: "Applications",
-                  value: directApplications.length,
+                  value: safeDirectApps.length,
                   icon: "📋",
                 },
                 {
                   label: "Shortlisted",
-                  value: applications.filter(
+                  value: safeApplications.filter(
                     ([, a]) => a.status === ApplicationStatus.shortlisted,
                   ).length,
                   icon: "⭐",
                 },
                 {
                   label: "Interviewed",
-                  value: applications.filter(
+                  value: safeApplications.filter(
                     ([, a]) => a.status === ApplicationStatus.interviewed,
                   ).length,
                   icon: "🎯",
@@ -567,7 +579,7 @@ export default function AdminDashboard() {
                     color: "oklch(0.62 0.18 40)",
                   }}
                 >
-                  {directApplications.length}
+                  {safeDirectApps.length}
                 </span>
               </div>
               <div
@@ -588,7 +600,7 @@ export default function AdminDashboard() {
                       Loading applications...
                     </p>
                   </div>
-                ) : directApplications.length === 0 ? (
+                ) : safeDirectApps.length === 0 ? (
                   <div
                     data-ocid="admin.empty_state"
                     className="p-8 text-center text-sm text-muted-foreground"
@@ -615,7 +627,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {directApplications.map(
+                      {safeDirectApps.map(
                         (
                           [id, app]: [bigint, DirectApplication],
                           idx: number,
@@ -715,7 +727,7 @@ export default function AdminDashboard() {
                     color: "oklch(0.62 0.18 40)",
                   }}
                 >
-                  {applications.length}
+                  {safeApplications.length}
                 </span>
               </div>
               <div
@@ -736,7 +748,7 @@ export default function AdminDashboard() {
                       Loading applications...
                     </p>
                   </div>
-                ) : applications.length === 0 ? (
+                ) : safeApplications.length === 0 ? (
                   <div
                     data-ocid="admin.empty_state"
                     className="p-8 text-center text-sm text-muted-foreground"
@@ -755,7 +767,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {applications.map(([id, app], idx) => (
+                      {safeApplications.map(([id, app], idx) => (
                         <TableRow
                           key={id.toString()}
                           data-ocid={`admin.row.${idx + 1}`}
