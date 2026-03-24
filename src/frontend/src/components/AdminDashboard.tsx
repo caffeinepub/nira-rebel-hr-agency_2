@@ -461,12 +461,11 @@ export default function AdminDashboard() {
             </a>
             <div className="w-px h-5 bg-border" />
             <div className="flex items-center gap-2">
-              <div
-                className="w-7 h-7 rounded flex items-center justify-center text-white"
-                style={{ background: "oklch(0.62 0.18 40)" }}
-              >
-                <ShieldCheck size={14} />
-              </div>
+              <img
+                src="/assets/uploads/nira_rebel_photo-019d1f7f-8eb3-7143-b4a4-abb72c418f74-1.jpeg"
+                alt="Nira Rebel logo"
+                style={{ height: "32px", width: "auto", objectFit: "contain" }}
+              />
               <h1 className="font-bold text-base text-gray-900">
                 Admin Dashboard
               </h1>
