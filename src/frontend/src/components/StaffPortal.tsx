@@ -134,7 +134,7 @@ export default function StaffPortal() {
             <Loader2
               className="animate-spin"
               size={28}
-              style={{ color: "oklch(0.62 0.18 40)" }}
+              style={{ color: "oklch(0.62 0.18 220)" }}
             />
             <p className="text-sm text-muted-foreground">Verifying access...</p>
           </div>
@@ -159,7 +159,7 @@ export default function StaffPortal() {
           <div className="text-center mb-8">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-              style={{ background: "oklch(0.62 0.18 40)" }}
+              style={{ background: "oklch(0.62 0.18 220)" }}
             >
               <Users size={22} className="text-white" />
             </div>
@@ -228,7 +228,7 @@ export default function StaffPortal() {
               disabled={loggingIn}
               data-ocid="staff.submit_button"
               className="w-full text-white font-semibold mt-2"
-              style={{ background: "oklch(0.62 0.18 40)" }}
+              style={{ background: "oklch(0.62 0.18 220)" }}
             >
               {loggingIn ? (
                 <>
@@ -282,7 +282,7 @@ export default function StaffPortal() {
             <div className="flex items-center gap-2">
               <div
                 className="w-7 h-7 rounded flex items-center justify-center text-white"
-                style={{ background: "oklch(0.62 0.18 40)" }}
+                style={{ background: "oklch(0.62 0.18 220)" }}
               >
                 <Users size={14} />
               </div>
@@ -313,7 +313,7 @@ export default function StaffPortal() {
                 href="/admin"
                 data-ocid="staff.link"
                 className="text-sm font-medium"
-                style={{ color: "oklch(0.62 0.18 40)" }}
+                style={{ color: "oklch(0.62 0.18 220)" }}
               >
                 Admin Dashboard
               </a>
@@ -380,7 +380,7 @@ export default function StaffPortal() {
               <Loader2
                 className="animate-spin mx-auto mb-2"
                 size={20}
-                style={{ color: "oklch(0.62 0.18 40)" }}
+                style={{ color: "oklch(0.62 0.18 220)" }}
               />
               <p className="text-sm text-muted-foreground">
                 Loading applications...
