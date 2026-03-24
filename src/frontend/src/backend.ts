@@ -133,6 +133,15 @@ export enum Variant_staff_employer_candidate {
     employer = "employer",
     candidate = "candidate"
 }
+export interface StaffAccountInfo {
+    userId: string;
+    name: string;
+    isActive: boolean;
+}
+export interface StaffLoginResult {
+    userId: string;
+    name: string;
+}
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     applyForJob(jobId: bigint, coverLetter: string): Promise<bigint>;
@@ -159,6 +168,12 @@ export interface backendInterface {
     submitDirectApplication(candidateName: string, jobTitle: string, phone: string, email: string): Promise<bigint>;
     updateApplicationStatus(applicationId: bigint, status: ApplicationStatus): Promise<void>;
     updateDirectApplicationStatus(id: bigint, status: ApplicationStatus): Promise<void>;
+    createStaffAccount(userId: string, password: string, name: string): Promise<boolean>;
+    deleteStaffAccount(userId: string): Promise<void>;
+    deactivateStaffAccount(userId: string, deactivate: boolean): Promise<void>;
+    listStaffAccounts(): Promise<StaffAccountInfo[]>;
+    verifyStaffLogin(userId: string, password: string): Promise<StaffLoginResult | null>;
+    isCallerStaffOrAdmin(): Promise<boolean>;
 }
 import type { Application as _Application, ApplicationStatus as _ApplicationStatus, DirectApplication as _DirectApplication, Job as _Job, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -511,6 +526,149 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.updateDirectApplicationStatus(arg0, to_candid_ApplicationStatus_n26(this._uploadFile, this._downloadFile, arg1));
             return result;
+        }
+    }
+    async createStaffAccount(arg0: string, arg1: string, arg2: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).createStaffAccount(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).createStaffAccount(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async deleteStaffAccount(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                await (this.actor as any).deleteStaffAccount(arg0);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            await (this.actor as any).deleteStaffAccount(arg0);
+        }
+    }
+    async deactivateStaffAccount(arg0: string, arg1: boolean): Promise<void> {
+        if (this.processError) {
+            try {
+                await (this.actor as any).deactivateStaffAccount(arg0, arg1);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            await (this.actor as any).deactivateStaffAccount(arg0, arg1);
+        }
+    }
+    async listStaffAccounts(): Promise<StaffAccountInfo[]> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).listStaffAccounts() as Array<{userId: string; name: string; isActive: boolean}>;
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).listStaffAccounts() as Array<{userId: string; name: string; isActive: boolean}>;
+            return result;
+        }
+    }
+    async verifyStaffLogin(arg0: string, arg1: string): Promise<StaffLoginResult | null> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).verifyStaffLogin(arg0, arg1) as [] | [{userId: string; name: string}];
+                return result.length === 0 ? null : result[0];
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).verifyStaffLogin(arg0, arg1) as [] | [{userId: string; name: string}];
+            return result.length === 0 ? null : result[0];
+        }
+    }
+    async isCallerStaffOrAdmin(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).isCallerStaffOrAdmin();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).isCallerStaffOrAdmin();
+            return result;
+        }
+    }
+
+    async clockIn(staffId: string, staffName: string, date: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await (this.actor as any).clockIn(staffId, staffName, date);
+                return BigInt(result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await (this.actor as any).clockIn(staffId, staffName, date);
+            return BigInt(result);
+        }
+    }
+    async clockOut(staffId: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).clockOut(staffId) as boolean;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).clockOut(staffId) as boolean;
+        }
+    }
+    async isStaffClockedIn(staffId: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).isStaffClockedIn(staffId) as boolean;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).isStaffClockedIn(staffId) as boolean;
+        }
+    }
+    async getStaffAttendance(staffId: string): Promise<any[]> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).getStaffAttendance(staffId) as any[];
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).getStaffAttendance(staffId) as any[];
+        }
+    }
+    async listAllAttendanceLogs(): Promise<any[]> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).listAllAttendanceLogs() as any[];
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).listAllAttendanceLogs() as any[];
         }
     }
 }

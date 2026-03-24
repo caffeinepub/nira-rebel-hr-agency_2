@@ -8,7 +8,7 @@ import MixinAuthorization "authorization/MixinAuthorization";
 
 
 
-actor {
+persistent actor {
   type Job = {
     title : Text;
     description : Text;
@@ -73,9 +73,19 @@ actor {
     name : Text;
   };
 
+  // Attendance log record
+  public type AttendanceLog = {
+    logId : Nat;
+    staffId : Text;
+    staffName : Text;
+    clockIn : Int;
+    clockOut : ?Int;
+    date : Text;
+  };
+
   // Integrate authorization component
   let accessControlState = AccessControl.initState();
-  var adminAssigned : Bool = false;
+  stable var adminAssigned : Bool = false;
   include MixinAuthorization(accessControlState);
 
   let jobs = Map.empty<Nat, Job>();
@@ -87,13 +97,18 @@ actor {
   let preApprovedStaffEmails = Map.empty<Text, Bool>();
   // Manual staff credentials keyed by userId
   let staffAccounts = Map.empty<Text, StaffAccount>();
+  // Attendance logs keyed by logId
+  let attendanceLogs = Map.empty<Nat, AttendanceLog>();
+  // Track active (open) clock-in per staffId
+  let activeClockIn = Map.empty<Text, Nat>(); // staffId -> logId
 
-  var nextJobId : Nat = 1;
-  var nextApplicationId : Nat = 1;
+  stable var nextJobId : Nat = 1;
+  stable var nextApplicationId : Nat = 1;
+  stable var nextAttendanceLogId : Nat = 1;
 
   let SEED_ADMIN_EMAIL : Text = "ns244128@gmail.com";
   let SEED_ADMIN_EMAIL_2 : Text = "Rebelhrjobs1451@gmail.com";
-  var adminSeeded : Bool = false;
+  stable var adminSeeded : Bool = false;
 
   func isStaff(caller : Principal) : Bool {
     switch (staffRoles.get(caller)) {
@@ -342,6 +357,20 @@ actor {
     staffAccounts.remove(userId);
   };
 
+  // Admin activates or deactivates a staff account
+  public shared ({ caller }) func deactivateStaffAccount(userId : Text, deactivate : Bool) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can deactivate staff accounts");
+    };
+    switch (staffAccounts.get(userId)) {
+      case (?account) {
+        let updated : StaffAccount = { account with isActive = not deactivate };
+        staffAccounts.add(userId, updated);
+      };
+      case (null) {};
+    };
+  };
+
   // Admin lists all staff accounts (without passwords)
   public query ({ caller }) func listStaffAccounts() : async [StaffAccountInfo] {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
@@ -387,7 +416,7 @@ actor {
     applicationId;
   };
 
-  // List all direct (admin or staff only)
+  // List all direct applications (staff or admin only)
   public query ({ caller }) func listAllDirectApplications() : async [(Nat, DirectApplication)] {
     if (not isStaffOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only staff or admin can view direct applications");
@@ -395,7 +424,7 @@ actor {
     directApplications.entries().toArray();
   };
 
-  // Update direct (admin or staff only)
+  // Update direct application status (staff or admin only)
   public shared ({ caller }) func updateDirectApplicationStatus(id : Nat, status : ApplicationStatus) : async () {
     if (not isStaffOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only staff or admin can update direct application status");
@@ -407,5 +436,68 @@ actor {
       };
       case (null) { Runtime.trap("Direct application not found") };
     };
+  };
+
+  // ─── Attendance System ───
+
+  // Staff clocks in — no auth needed (identified by staffId from manual login session)
+  public shared func clockIn(staffId : Text, staffName : Text, date : Text) : async Nat {
+    // If already clocked in, return existing logId
+    switch (activeClockIn.get(staffId)) {
+      case (?existingLogId) { return existingLogId };
+      case (null) {};
+    };
+    let logId = nextAttendanceLogId;
+    let log : AttendanceLog = {
+      logId;
+      staffId;
+      staffName;
+      clockIn = Time.now();
+      clockOut = null;
+      date;
+    };
+    attendanceLogs.add(logId, log);
+    activeClockIn.add(staffId, logId);
+    nextAttendanceLogId += 1;
+    logId;
+  };
+
+  // Staff clocks out
+  public shared func clockOut(staffId : Text) : async Bool {
+    switch (activeClockIn.get(staffId)) {
+      case (?logId) {
+        switch (attendanceLogs.get(logId)) {
+          case (?log) {
+            let updated : AttendanceLog = { log with clockOut = ?Time.now() };
+            attendanceLogs.add(logId, updated);
+            activeClockIn.remove(staffId);
+            true;
+          };
+          case (null) { false };
+        };
+      };
+      case (null) { false };
+    };
+  };
+
+  // Check if a staff member is currently clocked in
+  public query func isStaffClockedIn(staffId : Text) : async Bool {
+    switch (activeClockIn.get(staffId)) {
+      case (?_) { true };
+      case (null) { false };
+    };
+  };
+
+  // Get attendance logs for a specific staff member
+  public query func getStaffAttendance(staffId : Text) : async [AttendanceLog] {
+    attendanceLogs.filter(func(_id, log) { Text.equal(log.staffId, staffId) }).values().toArray();
+  };
+
+  // Admin only: list all attendance logs
+  public query ({ caller }) func listAllAttendanceLogs() : async [AttendanceLog] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can view all attendance logs");
+    };
+    attendanceLogs.values().toArray();
   };
 };

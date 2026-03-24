@@ -20,6 +20,14 @@ export type ApplicationStatus = { 'interviewed' : null } |
   { 'pending' : null } |
   { 'rejected' : null } |
   { 'shortlisted' : null };
+export interface AttendanceLog {
+  'logId' : bigint,
+  'staffId' : string,
+  'staffName' : string,
+  'clockIn' : bigint,
+  'clockOut' : [] | [bigint],
+  'date' : string,
+}
 export interface DirectApplication {
   'status' : ApplicationStatus,
   'appliedAt' : bigint,
@@ -35,6 +43,15 @@ export interface Job {
   'description' : string,
   'requirements' : string,
   'location' : string,
+}
+export interface StaffAccountInfo {
+  'userId' : string,
+  'name' : string,
+  'isActive' : boolean,
+}
+export interface StaffLoginResult {
+  'userId' : string,
+  'name' : string,
 }
 export interface UserProfile {
   'name' : string,
@@ -53,16 +70,24 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'assignStaffRole' : ActorMethod<[Principal], undefined>,
   'claimAdminSeed' : ActorMethod<[string], boolean>,
+  'clockIn' : ActorMethod<[string, string, string], bigint>,
+  'clockOut' : ActorMethod<[string], boolean>,
   'createJob' : ActorMethod<[string, string, string, number, string], bigint>,
+  'createStaffAccount' : ActorMethod<[string, string, string], boolean>,
+  'deactivateStaffAccount' : ActorMethod<[string, boolean], undefined>,
   'deleteJob' : ActorMethod<[bigint], undefined>,
+  'deleteStaffAccount' : ActorMethod<[string], undefined>,
   'getApplication' : ActorMethod<[bigint], [] | [Application]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getJob' : ActorMethod<[bigint], [] | [Job]>,
+  'getStaffAttendance' : ActorMethod<[string], Array<AttendanceLog>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isStaffClockedIn' : ActorMethod<[string], boolean>,
   'isUserStaff' : ActorMethod<[Principal], boolean>,
   'listAllApplications' : ActorMethod<[], Array<[bigint, Application]>>,
+  'listAllAttendanceLogs' : ActorMethod<[], Array<AttendanceLog>>,
   'listAllDirectApplications' : ActorMethod<
     [],
     Array<[bigint, DirectApplication]>
@@ -74,6 +99,7 @@ export interface _SERVICE {
   >,
   'listJobs' : ActorMethod<[], Array<[bigint, Job]>>,
   'listMyApplications' : ActorMethod<[], Array<[bigint, Application]>>,
+  'listStaffAccounts' : ActorMethod<[], Array<StaffAccountInfo>>,
   'removeStaffRole' : ActorMethod<[Principal], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'submitDirectApplication' : ActorMethod<
@@ -88,6 +114,7 @@ export interface _SERVICE {
     [bigint, ApplicationStatus],
     undefined
   >,
+  'verifyStaffLogin' : ActorMethod<[string, string], [] | [StaffLoginResult]>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

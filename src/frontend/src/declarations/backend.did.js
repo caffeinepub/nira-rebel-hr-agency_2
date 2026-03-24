@@ -25,6 +25,14 @@ export const Application = IDL.Record({
   'jobId' : IDL.Nat,
   'coverLetter' : IDL.Text,
 });
+export const AttendanceLog = IDL.Record({
+  'logId' : IDL.Nat,
+  'staffId' : IDL.Text,
+  'staffName' : IDL.Text,
+  'clockIn' : IDL.Int,
+  'clockOut' : IDL.Opt(IDL.Int),
+  'date' : IDL.Text,
+});
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Text,
@@ -51,6 +59,15 @@ export const DirectApplication = IDL.Record({
   'candidateName' : IDL.Text,
   'phone' : IDL.Text,
 });
+export const StaffAccountInfo = IDL.Record({
+  'userId' : IDL.Text,
+  'name' : IDL.Text,
+  'isActive' : IDL.Bool,
+});
+export const StaffLoginResult = IDL.Record({
+  'userId' : IDL.Text,
+  'name' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -58,28 +75,36 @@ export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'assignStaffRole' : IDL.Func([IDL.Principal], [], []),
   'claimAdminSeed' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'clockIn' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
+  'clockOut' : IDL.Func([IDL.Text], [IDL.Bool], []),
   'createJob' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
       [IDL.Nat],
       [],
     ),
+  'createStaffAccount' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
+  'deactivateStaffAccount' : IDL.Func([IDL.Text, IDL.Bool], [], []),
   'deleteJob' : IDL.Func([IDL.Nat], [], []),
+  'deleteStaffAccount' : IDL.Func([IDL.Text], [], []),
   'getApplication' : IDL.Func([IDL.Nat], [IDL.Opt(Application)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getJob' : IDL.Func([IDL.Nat], [IDL.Opt(Job)], ['query']),
+  'getStaffAttendance' : IDL.Func([IDL.Text], [IDL.Vec(AttendanceLog)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isStaffClockedIn' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isUserStaff' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
   'listAllApplications' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
       ['query'],
     ),
+  'listAllAttendanceLogs' : IDL.Func([],  [IDL.Vec(AttendanceLog)], ['query']),
   'listAllDirectApplications' : IDL.Func(
       [],
       [IDL.Vec(IDL.Tuple(IDL.Nat, DirectApplication))],
@@ -101,6 +126,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
       ['query'],
     ),
+  'listStaffAccounts' : IDL.Func([], [IDL.Vec(StaffAccountInfo)], ['query']),
   'removeStaffRole' : IDL.Func([IDL.Principal], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'submitDirectApplication' : IDL.Func(
@@ -114,6 +140,7 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'verifyStaffLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Opt(StaffLoginResult)], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -135,6 +162,14 @@ export const idlFactory = ({ IDL }) => {
     'applicant' : IDL.Principal,
     'jobId' : IDL.Nat,
     'coverLetter' : IDL.Text,
+  });
+  const AttendanceLog = IDL.Record({
+    'logId' : IDL.Nat,
+    'staffId' : IDL.Text,
+    'staffName' : IDL.Text,
+    'clockIn' : IDL.Int,
+    'clockOut' : IDL.Opt(IDL.Int),
+    'date' : IDL.Text,
   });
   const UserProfile = IDL.Record({
     'name' : IDL.Text,
@@ -162,6 +197,15 @@ export const idlFactory = ({ IDL }) => {
     'candidateName' : IDL.Text,
     'phone' : IDL.Text,
   });
+  const StaffAccountInfo = IDL.Record({
+    'userId' : IDL.Text,
+    'name' : IDL.Text,
+    'isActive' : IDL.Bool,
+  });
+  const StaffLoginResult = IDL.Record({
+    'userId' : IDL.Text,
+    'name' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
@@ -169,28 +213,36 @@ export const idlFactory = ({ IDL }) => {
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'assignStaffRole' : IDL.Func([IDL.Principal], [], []),
     'claimAdminSeed' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'clockIn' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
+    'clockOut' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'createJob' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
         [IDL.Nat],
         [],
       ),
+    'createStaffAccount' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
+    'deactivateStaffAccount' : IDL.Func([IDL.Text, IDL.Bool], [], []),
     'deleteJob' : IDL.Func([IDL.Nat], [], []),
+    'deleteStaffAccount' : IDL.Func([IDL.Text], [], []),
     'getApplication' : IDL.Func([IDL.Nat], [IDL.Opt(Application)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getJob' : IDL.Func([IDL.Nat], [IDL.Opt(Job)], ['query']),
+    'getStaffAttendance' : IDL.Func([IDL.Text], [IDL.Vec(AttendanceLog)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isStaffClockedIn' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'isUserStaff' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'listAllApplications' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
         ['query'],
       ),
+    'listAllAttendanceLogs' : IDL.Func([], [IDL.Vec(AttendanceLog)], ['query']),
     'listAllDirectApplications' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Nat, DirectApplication))],
@@ -212,6 +264,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Nat, Application))],
         ['query'],
       ),
+    'listStaffAccounts' : IDL.Func([], [IDL.Vec(StaffAccountInfo)], ['query']),
     'removeStaffRole' : IDL.Func([IDL.Principal], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'submitDirectApplication' : IDL.Func(
@@ -225,6 +278,7 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'verifyStaffLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Opt(StaffLoginResult)], ['query']),
   });
 };
 

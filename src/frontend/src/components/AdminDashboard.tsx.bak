@@ -446,8 +446,6 @@ export default function AdminDashboard() {
           </div>
           <a
             href="/staff"
-            target="_blank"
-            rel="noopener noreferrer"
             data-ocid="admin.link"
             className="text-sm font-medium"
             style={{ color: LIGHT_BLUE }}
@@ -538,9 +536,6 @@ export default function AdminDashboard() {
 
             {/* Active Staff List */}
             <section className="mb-10">
-              <style>
-                {"@media print { .no-print { display: none !important; } }"}
-              </style>
               <div className="flex items-center gap-2 mb-4">
                 <Users size={18} style={{ color: LIGHT_BLUE }} />
                 <h2 className="text-lg font-bold text-gray-900">
@@ -552,17 +547,6 @@ export default function AdminDashboard() {
                 >
                   {staffAccounts.length}
                 </span>
-                <div className="ml-auto">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.print()}
-                    className="text-black font-semibold border-gray-300"
-                    data-ocid="admin.primary_button"
-                  >
-                    Print Report
-                  </Button>
-                </div>
               </div>
               {staffAccounts.length === 0 ? (
                 <div
@@ -707,15 +691,6 @@ export default function AdminDashboard() {
                   {attendanceLogs.length}
                 </span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => window.print()}
-                className="text-black font-semibold border-gray-300"
-                data-ocid="admin.secondary_button"
-              >
-                Print Report
-              </Button>
             </div>
 
             <div

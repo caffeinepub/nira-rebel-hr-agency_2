@@ -49,7 +49,6 @@ export function useIsCallerStaffOrAdmin() {
     queryKey: ["isCallerStaffOrAdmin"],
     queryFn: async () => {
       if (!actor) return false;
-      // Check admin first, then check staff via profile
       const [isAdmin, profile] = await Promise.all([
         actor.isCallerAdmin(),
         actor.getCallerUserProfile(),
@@ -273,6 +272,97 @@ export function useRemovePreApprovedStaffEmail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["preApprovedStaffEmails"] });
+    },
+  });
+}
+
+// ─── Attendance Hooks ───────────────────────────────────────────────────────
+
+export interface AttendanceLog {
+  logId: bigint;
+  staffId: string;
+  staffName: string;
+  clockIn: bigint;
+  clockOut: [] | [bigint];
+  date: string;
+}
+
+export function useListAllAttendanceLogs(options?: { enabled?: boolean }) {
+  const { actor, isFetching } = useActor();
+  return useQuery<AttendanceLog[]>({
+    queryKey: ["allAttendanceLogs"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return (actor as any).listAllAttendanceLogs() as Promise<AttendanceLog[]>;
+    },
+    enabled: !!actor && !isFetching && (options?.enabled ?? true),
+  });
+}
+
+export function useGetStaffAttendance(staffId: string | null) {
+  const { actor, isFetching } = useActor();
+  return useQuery<AttendanceLog[]>({
+    queryKey: ["staffAttendance", staffId],
+    queryFn: async () => {
+      if (!actor || !staffId) return [];
+      return (actor as any).getStaffAttendance(staffId) as Promise<
+        AttendanceLog[]
+      >;
+    },
+    enabled: !!actor && !isFetching && !!staffId,
+    refetchInterval: 30000,
+  });
+}
+
+export function useIsStaffClockedIn(staffId: string | null) {
+  const { actor, isFetching } = useActor();
+  return useQuery<boolean>({
+    queryKey: ["isClockedIn", staffId],
+    queryFn: async () => {
+      if (!actor || !staffId) return false;
+      return (actor as any).isStaffClockedIn(staffId) as Promise<boolean>;
+    },
+    enabled: !!actor && !isFetching && !!staffId,
+    refetchInterval: 30000,
+  });
+}
+
+export function useClockIn() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      staffId,
+      staffName,
+      date,
+    }: { staffId: string; staffName: string; date: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).clockIn(
+        staffId,
+        staffName,
+        date,
+      ) as Promise<bigint>;
+    },
+    onSuccess: (_, { staffId }) => {
+      queryClient.invalidateQueries({ queryKey: ["isClockedIn", staffId] });
+      queryClient.invalidateQueries({ queryKey: ["staffAttendance", staffId] });
+      queryClient.invalidateQueries({ queryKey: ["allAttendanceLogs"] });
+    },
+  });
+}
+
+export function useClockOut() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (staffId: string) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).clockOut(staffId) as Promise<boolean>;
+    },
+    onSuccess: (_, staffId) => {
+      queryClient.invalidateQueries({ queryKey: ["isClockedIn", staffId] });
+      queryClient.invalidateQueries({ queryKey: ["staffAttendance", staffId] });
+      queryClient.invalidateQueries({ queryKey: ["allAttendanceLogs"] });
     },
   });
 }

@@ -107,9 +107,8 @@ function AttendanceTab({ session }: { session: StaffSession }) {
         date: todayStr,
       });
       toast.success("Clocked in successfully!");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Clock-in failed: ${msg}`);
+    } catch {
+      toast.error("Failed to clock in. Please try again.");
     }
   };
 
@@ -117,9 +116,8 @@ function AttendanceTab({ session }: { session: StaffSession }) {
     try {
       await clockOut.mutateAsync(session.userId);
       toast.success("Clocked out successfully!");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Clock-out failed: ${msg}`);
+    } catch {
+      toast.error("Failed to clock out. Please try again.");
     }
   };
 
@@ -303,7 +301,8 @@ export default function StaffPortal() {
   const { identity } = useInternetIdentity();
   const isAdminViaII = !!identity && !identity.getPrincipal().isAnonymous();
 
-  const { isLoading: checkingAccess } = useIsCallerStaffOrAdmin();
+  const { data: isStaffOrAdmin, isLoading: checkingAccess } =
+    useIsCallerStaffOrAdmin();
 
   const updateStatus = useUpdateDirectApplicationStatus();
 
@@ -387,7 +386,7 @@ export default function StaffPortal() {
     }
   };
 
-  const hasAccess = !!session || isAdminViaII;
+  const hasAccess = !!session || (isAdminViaII && !!isStaffOrAdmin);
 
   if (!hasAccess) {
     if (checkingAccess && isAdminViaII) {
@@ -651,22 +650,6 @@ export default function StaffPortal() {
 
           {/* ─── Applications Tab ─── */}
           <TabsContent value="applications">
-            <div className="flex justify-end mb-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => window.print()}
-                className="text-black font-semibold border-gray-300"
-                data-ocid="staff.primary_button"
-              >
-                Print Report
-              </Button>
-            </div>
-            <style>
-              {
-                "@media print { body > *:not(#print-area) { display: none !important; } #print-area { display: block !important; } }"
-              }
-            </style>
             {/* Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
               {[
@@ -715,128 +698,121 @@ export default function StaffPortal() {
               ))}
             </div>
 
-            <div id="print-area">
-              <div
-                className="rounded-xl border overflow-hidden"
-                style={{ borderColor: "oklch(0.88 0.003 260)" }}
-              >
-                {loadingApps ? (
-                  <div
-                    data-ocid="staff.loading_state"
-                    className="p-8 text-center"
-                  >
-                    <Loader2
-                      className="animate-spin mx-auto mb-2"
-                      size={20}
-                      style={{ color: "oklch(0.62 0.18 220)" }}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Loading applications...
-                    </p>
-                  </div>
-                ) : directApplications.length === 0 ? (
-                  <div
-                    data-ocid="staff.empty_state"
-                    className="p-8 text-center text-sm text-muted-foreground"
-                  >
-                    No applications yet.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
-                        <TableHead className="text-black">#</TableHead>
-                        <TableHead className="text-black">
-                          Candidate Name
-                        </TableHead>
-                        <TableHead className="text-black">
-                          Job Applied For
-                        </TableHead>
-                        <TableHead className="text-black">Phone</TableHead>
-                        <TableHead className="text-black">Email</TableHead>
-                        <TableHead className="text-black">Status</TableHead>
-                        <TableHead className="text-black">
-                          Update Status
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {directApplications.map(
-                        (
-                          [id, app]: [bigint, DirectApplication],
-                          idx: number,
-                        ) => (
-                          <TableRow
-                            key={id.toString()}
-                            data-ocid={`staff.row.${idx + 1}`}
-                            style={{ background: "oklch(0.99 0.003 260)" }}
-                          >
-                            <TableCell className="text-black">
-                              {idx + 1}
-                            </TableCell>
-                            <TableCell className="font-medium text-black">
-                              {app.candidateName}
-                            </TableCell>
-                            <TableCell className="text-black">
-                              {app.jobTitle}
-                            </TableCell>
-                            <TableCell className="text-black">
-                              {app.phone || "—"}
-                            </TableCell>
-                            <TableCell className="text-black">
-                              {app.email || "—"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`border-0 ${
-                                  STATUS_COLORS[app.status as ApplicationStatus]
-                                }`}
+            <div
+              className="rounded-xl border overflow-hidden"
+              style={{ borderColor: "oklch(0.88 0.003 260)" }}
+            >
+              {loadingApps ? (
+                <div
+                  data-ocid="staff.loading_state"
+                  className="p-8 text-center"
+                >
+                  <Loader2
+                    className="animate-spin mx-auto mb-2"
+                    size={20}
+                    style={{ color: "oklch(0.62 0.18 220)" }}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Loading applications...
+                  </p>
+                </div>
+              ) : directApplications.length === 0 ? (
+                <div
+                  data-ocid="staff.empty_state"
+                  className="p-8 text-center text-sm text-muted-foreground"
+                >
+                  No applications yet.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow style={{ background: "oklch(0.97 0.003 260)" }}>
+                      <TableHead className="text-black">#</TableHead>
+                      <TableHead className="text-black">
+                        Candidate Name
+                      </TableHead>
+                      <TableHead className="text-black">
+                        Job Applied For
+                      </TableHead>
+                      <TableHead className="text-black">Phone</TableHead>
+                      <TableHead className="text-black">Email</TableHead>
+                      <TableHead className="text-black">Status</TableHead>
+                      <TableHead className="text-black">
+                        Update Status
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {directApplications.map(
+                      ([id, app]: [bigint, DirectApplication], idx: number) => (
+                        <TableRow
+                          key={id.toString()}
+                          data-ocid={`staff.row.${idx + 1}`}
+                          style={{ background: "oklch(0.99 0.003 260)" }}
+                        >
+                          <TableCell className="text-black">
+                            {idx + 1}
+                          </TableCell>
+                          <TableCell className="font-medium text-black">
+                            {app.candidateName}
+                          </TableCell>
+                          <TableCell className="text-black">
+                            {app.jobTitle}
+                          </TableCell>
+                          <TableCell className="text-black">
+                            {app.phone || "—"}
+                          </TableCell>
+                          <TableCell className="text-black">
+                            {app.email || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`border-0 ${
+                                STATUS_COLORS[app.status as ApplicationStatus]
+                              }`}
+                            >
+                              {app.status as string}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={app.status as string}
+                              onValueChange={(val) =>
+                                handleStatusChange(id, val)
+                              }
+                            >
+                              <SelectTrigger
+                                data-ocid={`staff.select.${idx + 1}`}
+                                className="h-8 text-xs w-36"
                               >
-                                {app.status as string}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={app.status as string}
-                                onValueChange={(val) =>
-                                  handleStatusChange(id, val)
-                                }
-                              >
-                                <SelectTrigger
-                                  data-ocid={`staff.select.${idx + 1}`}
-                                  className="h-8 text-xs w-36"
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={ApplicationStatus.pending}>
+                                  Pending
+                                </SelectItem>
+                                <SelectItem
+                                  value={ApplicationStatus.shortlisted}
                                 >
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value={ApplicationStatus.pending}>
-                                    Pending
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={ApplicationStatus.shortlisted}
-                                  >
-                                    Shortlisted
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={ApplicationStatus.interviewed}
-                                  >
-                                    Interviewed
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={ApplicationStatus.rejected}
-                                  >
-                                    Rejected
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        ),
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
+                                  Shortlisted
+                                </SelectItem>
+                                <SelectItem
+                                  value={ApplicationStatus.interviewed}
+                                >
+                                  Interviewed
+                                </SelectItem>
+                                <SelectItem value={ApplicationStatus.rejected}>
+                                  Rejected
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           </TabsContent>
 
@@ -849,7 +825,7 @@ export default function StaffPortal() {
                 data-ocid="staff.empty_state"
                 className="p-8 text-center text-sm text-muted-foreground"
               >
-                Log in as staff to use Attendance tracking. Admin view only.
+                Attendance tracking is available for manual staff logins only.
               </div>
             )}
           </TabsContent>
