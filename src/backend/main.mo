@@ -52,6 +52,27 @@ actor {
     appliedAt : Int;
   };
 
+  // Manual staff credential record (password stored plaintext for simplicity)
+  public type StaffAccount = {
+    userId : Text;
+    password : Text;
+    name : Text;
+    isActive : Bool;
+  };
+
+  // Public-safe view of staff account (no password)
+  public type StaffAccountInfo = {
+    userId : Text;
+    name : Text;
+    isActive : Bool;
+  };
+
+  // Returned on successful staff login
+  public type StaffLoginResult = {
+    userId : Text;
+    name : Text;
+  };
+
   // Integrate authorization component
   let accessControlState = AccessControl.initState();
   var adminAssigned : Bool = false;
@@ -64,11 +85,14 @@ actor {
   let staffRoles = Map.empty<Principal, Bool>();
   // Pre-approved staff emails: when someone registers with this email they get staff role
   let preApprovedStaffEmails = Map.empty<Text, Bool>();
+  // Manual staff credentials keyed by userId
+  let staffAccounts = Map.empty<Text, StaffAccount>();
 
   var nextJobId : Nat = 1;
   var nextApplicationId : Nat = 1;
 
   let SEED_ADMIN_EMAIL : Text = "ns244128@gmail.com";
+  let SEED_ADMIN_EMAIL_2 : Text = "Rebelhrjobs1451@gmail.com";
   var adminSeeded : Bool = false;
 
   func isStaff(caller : Principal) : Bool {
@@ -92,7 +116,7 @@ actor {
   public shared ({ caller }) func claimAdminSeed(email : Text) : async Bool {
     // Reject anonymous callers -- they must be logged in first
     if (caller.isAnonymous()) { return false };
-    if (not Text.equal(email, SEED_ADMIN_EMAIL)) { return false };
+    if (not Text.equal(email, SEED_ADMIN_EMAIL) and not Text.equal(email, SEED_ADMIN_EMAIL_2)) { return false };
     // Already admin -- return true
     if (AccessControl.isAdmin(accessControlState, caller)) { return true };
     accessControlState.userRoles.add(caller, #admin);
@@ -288,6 +312,58 @@ actor {
       Runtime.trap("Unauthorized: Only admin can view pre-approved staff emails");
     };
     preApprovedStaffEmails.keys().toArray();
+  };
+
+  // ─── Manual Staff Account Management ───
+
+  // Admin creates a staff account with a userId and password
+  public shared ({ caller }) func createStaffAccount(userId : Text, password : Text, name : Text) : async Bool {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can create staff accounts");
+    };
+    if (userId.size() == 0 or password.size() == 0 or name.size() == 0) {
+      return false;
+    };
+    // Don't overwrite existing account
+    switch (staffAccounts.get(userId)) {
+      case (?_) { return false }; // already exists
+      case (null) {};
+    };
+    let account : StaffAccount = { userId; password; name; isActive = true };
+    staffAccounts.add(userId, account);
+    true;
+  };
+
+  // Admin deletes a staff account
+  public shared ({ caller }) func deleteStaffAccount(userId : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can delete staff accounts");
+    };
+    staffAccounts.remove(userId);
+  };
+
+  // Admin lists all staff accounts (without passwords)
+  public query ({ caller }) func listStaffAccounts() : async [StaffAccountInfo] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can list staff accounts");
+    };
+    staffAccounts.entries().map(func((_k, a) : (Text, StaffAccount)) : StaffAccountInfo {
+      { userId = a.userId; name = a.name; isActive = a.isActive };
+    }).toArray();
+  };
+
+  // Staff login verification — callable by anyone (including anonymous)
+  public query func verifyStaffLogin(userId : Text, password : Text) : async ?StaffLoginResult {
+    switch (staffAccounts.get(userId)) {
+      case (?account) {
+        if (Text.equal(account.password, password) and account.isActive) {
+          ?{ userId = account.userId; name = account.name };
+        } else {
+          null;
+        };
+      };
+      case (null) { null };
+    };
   };
 
   // DirectApplication (open to all, no auth required)

@@ -35,6 +35,15 @@ export interface UserProfile {
     details: string;
     profileType: Variant_staff_employer_candidate;
 }
+export interface StaffAccountInfo {
+    userId: string;
+    name: string;
+    isActive: boolean;
+}
+export interface StaffLoginResult {
+    userId: string;
+    name: string;
+}
 export enum ApplicationStatus {
     interviewed = "interviewed",
     pending = "pending",
@@ -57,13 +66,16 @@ export interface backendInterface {
     assignStaffRole(user: Principal): Promise<void>;
     claimAdminSeed(email: string): Promise<boolean>;
     createJob(title: string, description: string, requirements: string, salary: number, location: string): Promise<bigint>;
+    createStaffAccount(userId: string, password: string, name: string): Promise<boolean>;
     deleteJob(jobId: bigint): Promise<void>;
+    deleteStaffAccount(userId: string): Promise<void>;
     getApplication(applicationId: bigint): Promise<Application | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getJob(jobId: bigint): Promise<Job | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    isCallerStaffOrAdmin(): Promise<boolean>;
     isUserStaff(user: Principal): Promise<boolean>;
     listAllApplications(): Promise<Array<[bigint, Application]>>;
     listAllDirectApplications(): Promise<Array<[bigint, DirectApplication]>>;
@@ -71,9 +83,11 @@ export interface backendInterface {
     listApplicationsForJob(jobId: bigint): Promise<Array<[bigint, Application]>>;
     listJobs(): Promise<Array<[bigint, Job]>>;
     listMyApplications(): Promise<Array<[bigint, Application]>>;
+    listStaffAccounts(): Promise<StaffAccountInfo[]>;
     removeStaffRole(user: Principal): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitDirectApplication(candidateName: string, jobTitle: string, phone: string, email: string): Promise<bigint>;
     updateApplicationStatus(applicationId: bigint, status: ApplicationStatus): Promise<void>;
     updateDirectApplicationStatus(id: bigint, status: ApplicationStatus): Promise<void>;
+    verifyStaffLogin(userId: string, password: string): Promise<StaffLoginResult | null>;
 }

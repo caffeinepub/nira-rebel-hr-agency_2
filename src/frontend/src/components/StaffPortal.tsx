@@ -1,6 +1,7 @@
 import { ApplicationStatus, type DirectApplication } from "@/backend";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useActor } from "@/hooks/useActor";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   useIsCallerStaffOrAdmin,
@@ -23,6 +25,7 @@ import {
   useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
 import { ArrowLeft, Loader2, Users } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<ApplicationStatus, string> = {
@@ -32,15 +35,73 @@ const STATUS_COLORS: Record<ApplicationStatus, string> = {
   [ApplicationStatus.rejected]: "bg-red-100 text-red-700",
 };
 
+type StaffSession = { userId: string; name: string };
+
+function getStoredSession(): StaffSession | null {
+  try {
+    const raw = localStorage.getItem("staffSession");
+    if (!raw) return null;
+    return JSON.parse(raw) as StaffSession;
+  } catch {
+    return null;
+  }
+}
+
 export default function StaffPortal() {
   const { identity } = useInternetIdentity();
-  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+  const isAdminViaII = !!identity && !identity.getPrincipal().isAnonymous();
 
   const { data: isStaffOrAdmin, isLoading: checkingAccess } =
     useIsCallerStaffOrAdmin();
-  const { data: directApplications = [], isLoading: loadingApps } =
-    useListAllDirectApplications();
+
   const updateStatus = useUpdateDirectApplicationStatus();
+
+  const { actor } = useActor();
+
+  const [session, setSession] = useState<StaffSession | null>(getStoredSession);
+  const { data: directApplications = [], isLoading: loadingApps } =
+    useListAllDirectApplications({ enabled: isAdminViaII || !!session });
+  const [loginUserId, setLoginUserId] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  const handleManualLogin = async () => {
+    if (!loginUserId.trim() || !loginPassword.trim()) {
+      toast.error("Please enter your UserID and password");
+      return;
+    }
+    if (!actor) {
+      toast.error("Not connected to backend");
+      return;
+    }
+    setLoggingIn(true);
+    try {
+      const result = (await (actor as any).verifyStaffLogin(
+        loginUserId.trim(),
+        loginPassword,
+      )) as { userId: string; name: string } | null;
+      if (result) {
+        const sess: StaffSession = { userId: result.userId, name: result.name };
+        localStorage.setItem("staffSession", JSON.stringify(sess));
+        setSession(sess);
+        toast.success(`Welcome, ${result.name}!`);
+      } else {
+        toast.error("Invalid UserID or password");
+      }
+    } catch {
+      toast.error("Login failed. Please try again.");
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleManualLogout = () => {
+    localStorage.removeItem("staffSession");
+    setSession(null);
+    setLoginUserId("");
+    setLoginPassword("");
+  };
 
   const handleStatusChange = async (id: bigint, status: string) => {
     try {
@@ -54,57 +115,147 @@ export default function StaffPortal() {
     }
   };
 
-  if (checkingAccess) {
+  // Determine if user has access
+  const hasAccess = !!session || (isAdminViaII && !!isStaffOrAdmin);
+
+  // Show login page if not authenticated
+  if (!hasAccess) {
+    // Show loading while checking II access
+    if (checkingAccess && isAdminViaII) {
+      return (
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ background: "oklch(0.99 0.003 260)" }}
+        >
+          <div
+            data-ocid="staff.loading_state"
+            className="flex flex-col items-center gap-3"
+          >
+            <Loader2
+              className="animate-spin"
+              size={28}
+              style={{ color: "oklch(0.62 0.18 40)" }}
+            />
+            <p className="text-sm text-muted-foreground">Verifying access...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "oklch(0.99 0.003 260)" }}
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ background: "oklch(0.97 0.003 260)" }}
       >
         <div
-          data-ocid="staff.loading_state"
-          className="flex flex-col items-center gap-3"
+          data-ocid="staff.dialog"
+          className="w-full max-w-md rounded-2xl border shadow-lg p-8"
+          style={{
+            background: "oklch(0.99 0.003 260)",
+            borderColor: "oklch(0.88 0.003 260)",
+          }}
         >
-          <Loader2
-            className="animate-spin"
-            size={28}
-            style={{ color: "oklch(0.62 0.18 40)" }}
-          />
-          <p className="text-sm text-muted-foreground">Verifying access...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !isStaffOrAdmin) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "oklch(0.99 0.003 260)" }}
-      >
-        <div data-ocid="staff.error_state" className="text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
-            <Users size={28} className="text-orange-400" />
+          {/* Logo area */}
+          <div className="text-center mb-8">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: "oklch(0.62 0.18 40)" }}
+            >
+              <Users size={22} className="text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">
+              Nira Rebel HR Agency
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">Staff Portal Login</p>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Staff Access Required
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            You need to be a staff member or admin to access this portal. Please
-            log in or contact your administrator to grant you staff access.
-          </p>
-          <a
-            href="/"
-            data-ocid="staff.link"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-medium text-white"
-            style={{ background: "oklch(0.62 0.18 40)" }}
-          >
-            <ArrowLeft size={14} /> Back to Home
-          </a>
+
+          {/* Form */}
+          <div className="flex flex-col gap-4">
+            <div>
+              <label
+                htmlFor="staff-userid"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                UserID
+              </label>
+              <Input
+                id="staff-userid"
+                type="text"
+                value={loginUserId}
+                onChange={(e) => setLoginUserId(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleManualLogin();
+                }}
+                placeholder="Enter your UserID"
+                data-ocid="staff.input"
+                className="text-black"
+                autoComplete="username"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="staff-password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="staff-password"
+                  type={showPassword ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleManualLogin();
+                  }}
+                  placeholder="Enter your password"
+                  data-ocid="staff.input"
+                  className="text-black pr-16"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-700"
+                  tabIndex={-1}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+            <Button
+              onClick={handleManualLogin}
+              disabled={loggingIn}
+              data-ocid="staff.submit_button"
+              className="w-full text-white font-semibold mt-2"
+              style={{ background: "oklch(0.62 0.18 40)" }}
+            >
+              {loggingIn ? (
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" /> Signing
+                  in...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </div>
+
+          <div className="mt-6 text-center">
+            <a
+              href="/"
+              data-ocid="staff.link"
+              className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
+            >
+              <ArrowLeft size={14} /> Back to Homepage
+            </a>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Portal content (logged in)
   return (
     <div
       className="min-h-screen"
@@ -140,14 +291,34 @@ export default function StaffPortal() {
               </h1>
             </div>
           </div>
-          <a
-            href="/admin"
-            data-ocid="staff.link"
-            className="text-sm font-medium"
-            style={{ color: "oklch(0.62 0.18 40)" }}
-          >
-            Admin Dashboard →
-          </a>
+          <div className="flex items-center gap-3">
+            {session && (
+              <>
+                <span className="text-sm text-gray-700">
+                  Welcome, <strong>{session.name}</strong>
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleManualLogout}
+                  data-ocid="staff.secondary_button"
+                  className="text-sm h-8"
+                >
+                  Logout
+                </Button>
+              </>
+            )}
+            {isAdminViaII && (
+              <a
+                href="/admin"
+                data-ocid="staff.link"
+                className="text-sm font-medium"
+                style={{ color: "oklch(0.62 0.18 40)" }}
+              >
+                Admin Dashboard
+              </a>
+            )}
+          </div>
         </div>
       </header>
 

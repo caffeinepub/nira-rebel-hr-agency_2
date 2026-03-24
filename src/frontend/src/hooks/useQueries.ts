@@ -62,7 +62,7 @@ export function useIsCallerStaffOrAdmin() {
   });
 }
 
-export function useListAllUsers() {
+export function useListAllUsers(options?: { enabled?: boolean }) {
   const { actor, isFetching } = useActor();
   return useQuery({
     queryKey: ["allUsers"],
@@ -70,11 +70,11 @@ export function useListAllUsers() {
       if (!actor) return [];
       return actor.listAllUsers();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && (options?.enabled ?? true),
   });
 }
 
-export function useListAllApplications() {
+export function useListAllApplications(options?: { enabled?: boolean }) {
   const { actor, isFetching } = useActor();
   return useQuery({
     queryKey: ["allApplications"],
@@ -82,7 +82,7 @@ export function useListAllApplications() {
       if (!actor) return [];
       return actor.listAllApplications();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && (options?.enabled ?? true),
   });
 }
 
@@ -155,7 +155,7 @@ export function useIsUserStaff(user: Principal | null) {
   });
 }
 
-export function useListAllDirectApplications() {
+export function useListAllDirectApplications(options?: { enabled?: boolean }) {
   const { actor, isFetching } = useActor();
   return useQuery<Array<[bigint, DirectApplication]>>({
     queryKey: ["allDirectApplications"],
@@ -163,7 +163,7 @@ export function useListAllDirectApplications() {
       if (!actor) return [];
       return actor.listAllDirectApplications();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && (options?.enabled ?? true),
   });
 }
 

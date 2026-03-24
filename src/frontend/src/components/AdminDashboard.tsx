@@ -40,9 +40,10 @@ import {
   useUpdateApplicationStatus,
   useUpdateDirectApplicationStatus,
 } from "@/hooks/useQueries";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  KeyRound,
   Loader2,
   LogIn,
   Mail,
@@ -64,7 +65,7 @@ function shortPrincipal(p: string) {
   return p.length > 12 ? `${p.slice(0, 8)}...` : p;
 }
 
-const ADMIN_SEED_EMAIL = "ns244128@gmail.com";
+const ADMIN_SEED_EMAILS = ["ns244128@gmail.com", "Rebelhrjobs1451@gmail.com"];
 
 export default function AdminDashboard() {
   const { identity } = useInternetIdentity();
@@ -75,12 +76,14 @@ export default function AdminDashboard() {
     : null;
 
   const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
-  const { data: users = [], isLoading: loadingUsers } = useListAllUsers();
+  const { data: users = [], isLoading: loadingUsers } = useListAllUsers({
+    enabled: isAdmin === true,
+  });
   const { data: applications = [], isLoading: loadingApps } =
-    useListAllApplications();
+    useListAllApplications({ enabled: isAdmin === true });
   const { data: jobs = [] } = useListJobs();
   const { data: directApplications = [], isLoading: loadingDirectApps } =
-    useListAllDirectApplications();
+    useListAllDirectApplications({ enabled: isAdmin === true });
   const updateDirectStatus = useUpdateDirectApplicationStatus();
 
   // Pre-approved staff email hooks
@@ -96,10 +99,71 @@ export default function AdminDashboard() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  const [seedEmail, setSeedEmail] = useState(ADMIN_SEED_EMAIL);
+  // When admin access is confirmed, re-fetch privileged data
+  useEffect(() => {
+    if (isAdmin === true) {
+      queryClient.invalidateQueries({ queryKey: ["allDirectApplications"] });
+      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["allApplications"] });
+    }
+  }, [isAdmin, queryClient]);
+
+  const { data: staffAccounts = [] } = useQuery({
+    queryKey: ["staffAccounts"],
+    queryFn: () =>
+      (actor as any).listStaffAccounts() as Promise<
+        Array<{ userId: string; name: string; isActive: boolean }>
+      >,
+    enabled: !!actor && !!isAdmin,
+  });
+
+  const createStaffAccountMutation = useMutation({
+    mutationFn: async ({
+      userId,
+      password,
+      name,
+    }: { userId: string; password: string; name: string }) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).createStaffAccount(
+        userId,
+        password,
+        name,
+      ) as Promise<boolean>;
+    },
+    onSuccess: (ok) => {
+      if (ok) {
+        toast.success("Staff account created");
+        setStaffUserId("");
+        setStaffPassword("");
+        setStaffName("");
+        queryClient.invalidateQueries({ queryKey: ["staffAccounts"] });
+      } else {
+        toast.error("UserID already exists");
+      }
+    },
+    onError: () => toast.error("Failed to create account"),
+  });
+
+  const deleteStaffAccountMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).deleteStaffAccount(userId) as Promise<void>;
+    },
+    onSuccess: () => {
+      toast.success("Staff account deleted");
+      queryClient.invalidateQueries({ queryKey: ["staffAccounts"] });
+    },
+    onError: () => toast.error("Failed to delete account"),
+  });
+
+  const [seedEmail, setSeedEmail] = useState(ADMIN_SEED_EMAILS[0]);
   const [seeding, setSeeding] = useState(false);
   const [autoAttempted, setAutoAttempted] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [staffUserId, setStaffUserId] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [staffName, setStaffName] = useState("");
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
 
   const jobMap = new Map(jobs.map(([id, job]) => [id.toString(), job.title]));
 
@@ -115,24 +179,27 @@ export default function AdminDashboard() {
     ) {
       setAutoAttempted(callerPrincipal);
       setSeeding(true);
-      actor
-        .claimAdminSeed(ADMIN_SEED_EMAIL)
-        .then((granted: boolean) => {
-          if (granted) {
-            toast.success("Admin access granted! Refreshing...", {
-              duration: 2000,
-            });
-            queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
-            // Seed returned false -- user is authenticated but not the seed email
-            setSeeding(false);
+      // Try each admin seed email in order
+      (async () => {
+        let anyGranted = false;
+        for (const email of ADMIN_SEED_EMAILS) {
+          try {
+            const granted: boolean = await actor.claimAdminSeed(email);
+            if (granted) {
+              anyGranted = true;
+              toast.success("Admin access granted! Refreshing...", {
+                duration: 2000,
+              });
+              queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+              setTimeout(() => window.location.reload(), 1500);
+              break;
+            }
+          } catch {
+            // ignore errors silently
           }
-        })
-        .catch(() => {
-          // ignore errors silently
-        })
-        .finally(() => setSeeding(false));
+        }
+        if (!anyGranted) setSeeding(false);
+      })();
     }
   }, [
     isAdmin,
@@ -758,6 +825,154 @@ export default function AdminDashboard() {
 
           {/* ─── STAFF MANAGEMENT TAB ─── */}
           <TabsContent value="staff-management">
+            {/* ── Create Staff Account ── */}
+            <section className="mb-8">
+              <div
+                className="rounded-xl border p-6"
+                style={{
+                  background: "oklch(0.99 0.003 260)",
+                  borderColor: "oklch(0.88 0.003 260)",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <KeyRound
+                    size={18}
+                    style={{ color: "oklch(0.62 0.18 40)" }}
+                  />
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Create Staff Account
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600 mb-5">
+                  Create a manual login credential for a staff member. They will
+                  use their UserID and password to access the Staff Portal.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  <Input
+                    type="text"
+                    value={staffUserId}
+                    onChange={(e) => setStaffUserId(e.target.value)}
+                    placeholder="UserID (e.g. john_doe)"
+                    data-ocid="admin.input"
+                    className="flex-1 text-black text-sm"
+                  />
+                  <div className="relative flex-1">
+                    <Input
+                      type={showStaffPassword ? "text" : "password"}
+                      value={staffPassword}
+                      onChange={(e) => setStaffPassword(e.target.value)}
+                      placeholder="Password"
+                      data-ocid="admin.input"
+                      className="w-full text-black text-sm pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowStaffPassword((p) => !p)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs"
+                      tabIndex={-1}
+                    >
+                      {showStaffPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <Input
+                    type="text"
+                    value={staffName}
+                    onChange={(e) => setStaffName(e.target.value)}
+                    placeholder="Full Name"
+                    data-ocid="admin.input"
+                    className="flex-1 text-black text-sm"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (
+                        !staffUserId.trim() ||
+                        !staffPassword.trim() ||
+                        !staffName.trim()
+                      ) {
+                        toast.error("All fields are required");
+                        return;
+                      }
+                      createStaffAccountMutation.mutate({
+                        userId: staffUserId.trim(),
+                        password: staffPassword,
+                        name: staffName.trim(),
+                      });
+                    }}
+                    disabled={createStaffAccountMutation.isPending}
+                    data-ocid="admin.submit_button"
+                    className="shrink-0 text-white"
+                    style={{ background: "oklch(0.62 0.18 40)" }}
+                  >
+                    {createStaffAccountMutation.isPending ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin mr-2" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Account"
+                    )}
+                  </Button>
+                </div>
+
+                {/* Staff Accounts List */}
+                {staffAccounts.length === 0 ? (
+                  <div
+                    data-ocid="admin.empty_state"
+                    className="text-sm text-gray-400 italic mt-4"
+                  >
+                    No manual staff accounts created yet.
+                  </div>
+                ) : (
+                  <ul
+                    data-ocid="admin.list"
+                    className="flex flex-col gap-2 mt-4"
+                  >
+                    {staffAccounts.map((acct, idx) => (
+                      <li
+                        key={acct.userId}
+                        data-ocid={`admin.item.${idx + 1}`}
+                        className="flex items-center justify-between px-4 py-2.5 rounded-lg border"
+                        style={{
+                          background: "oklch(0.97 0.003 260)",
+                          borderColor: "oklch(0.90 0.003 260)",
+                        }}
+                      >
+                        <div>
+                          <span className="font-medium text-gray-900 text-sm">
+                            {acct.userId}
+                          </span>
+                          <span className="text-gray-500 text-sm ml-3">
+                            {acct.name}
+                          </span>
+                          {acct.isActive ? (
+                            <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="ml-2 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-ocid={`admin.delete_button.${idx + 1}`}
+                          onClick={() =>
+                            deleteStaffAccountMutation.mutate(acct.userId)
+                          }
+                          disabled={deleteStaffAccountMutation.isPending}
+                          className="text-red-600 border-red-200 hover:bg-red-50 h-7 text-xs"
+                        >
+                          <Trash2 size={12} className="mr-1" /> Delete
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+
             {/* ── Invite Staff by Email ── */}
             <section className="mb-8">
               <div

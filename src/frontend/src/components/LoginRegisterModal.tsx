@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Variant_staff_employer_candidate } from "../backend";
 
-const ADMIN_SEED_EMAIL = "ns244128@gmail.com";
+const ADMIN_SEED_EMAILS = ["ns244128@gmail.com", "Rebelhrjobs1451@gmail.com"];
 
 interface Props {
   open: boolean;
@@ -72,16 +72,20 @@ export default function LoginRegisterModal({
     onOpenChange(val);
   };
 
-  const trySeedAdmin = async () => {
+  const trySeedAdmin = async (emailOverride?: string) => {
     if (!actor) return;
-    try {
-      const granted = await actor.claimAdminSeed(ADMIN_SEED_EMAIL);
-      if (granted) {
-        toast.success("Admin access granted!", { duration: 3000 });
-        queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    const emailsToTry = emailOverride ? [emailOverride] : ADMIN_SEED_EMAILS;
+    for (const email of emailsToTry) {
+      try {
+        const granted = await actor.claimAdminSeed(email);
+        if (granted) {
+          toast.success("Admin access granted!", { duration: 3000 });
+          queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+          break;
+        }
+      } catch {
+        // ignore seed errors
       }
-    } catch {
-      // ignore seed errors
     }
   };
 

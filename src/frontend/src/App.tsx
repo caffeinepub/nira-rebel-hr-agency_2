@@ -194,17 +194,17 @@ const JOBS: JobCard[] = [
 
 const EXPERTISE = [
   {
-    icon: "\ud83d\udd0d",
+    icon: "🔍",
     title: "Executive Search",
     desc: "Specialized placement for senior & leadership roles in banking and finance.",
   },
   {
-    icon: "\ud83c\udfe6",
+    icon: "🏦",
     title: "Banking Recruitment",
     desc: "Connecting skilled professionals with top banks: SBI, PNB, Axis Bank and more.",
   },
   {
-    icon: "\ud83d\uded2",
+    icon: "🛒",
     title: "E-commerce Staffing",
     desc: "Placing candidates across Blinkit, Swiggy, Flipkart, Amazon & delivery networks.",
   },
@@ -307,7 +307,7 @@ export default function App() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeFilter, setActiveFilter] = useState("All");
 
-  const [currentPage, setCurrentPage] = useState<string>(
+  const [currentPage, _setCurrentPage] = useState<string>(
     window.location.pathname,
   );
   const { identity, clear } = useInternetIdentity();
@@ -408,7 +408,7 @@ export default function App() {
         >
           <div className="flex items-center gap-3 flex-wrap">
             <span className="font-medium">
-              \ud83d\udd14 Join our WhatsApp for instant job alerts!
+              Join our WhatsApp for instant job alerts!
             </span>
             <a
               href={WA_GROUP}
@@ -417,7 +417,7 @@ export default function App() {
               data-ocid="announcement.primary_button"
               className="px-3 py-1 rounded border border-white text-white text-xs font-bold hover:bg-white hover:text-green-600 transition-colors"
             >
-              \ud83d\udcac Join Group
+              Join Group
             </a>
             <a
               href={WA_CHANNEL}
@@ -426,7 +426,7 @@ export default function App() {
               data-ocid="announcement.secondary_button"
               className="px-3 py-1 rounded border border-white text-white text-xs font-bold hover:bg-white hover:text-green-600 transition-colors"
             >
-              \ud83d\udce2 WA Channel
+              WA Channel
             </a>
           </div>
           <button
@@ -487,8 +487,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCurrentPage("/staff");
-                    window.history.pushState({}, "", "/staff");
+                    window.open("/staff", "_blank");
                   }}
                   data-ocid="nav.link"
                   className="px-3 py-2 text-xs font-medium text-white hover:text-yellow-400 transition-colors rounded"
@@ -500,8 +499,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCurrentPage("/admin");
-                    window.history.pushState({}, "", "/admin");
+                    window.open("/admin", "_blank");
                   }}
                   data-ocid="nav.link"
                   className="px-3 py-2 text-xs font-semibold rounded"
@@ -521,7 +519,7 @@ export default function App() {
                 data-ocid="nav.secondary_button"
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded border border-green-400 text-green-400 hover:bg-green-400 hover:text-white transition-colors"
               >
-                \ud83d\udce2 WA Channel
+                WA Channel
               </a>
               <a
                 href={WA_GROUP}
@@ -531,7 +529,7 @@ export default function App() {
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded text-white transition-colors"
                 style={{ background: "#25D366" }}
               >
-                \ud83d\udcac WA Group
+                WA Group
               </a>
               {isAuthenticated ? (
                 <>
@@ -599,9 +597,8 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCurrentPage("/staff");
-                    window.history.pushState({}, "", "/staff");
                     setMobileMenuOpen(false);
+                    window.open("/staff", "_blank");
                   }}
                   data-ocid="nav.link"
                   className="px-3 py-2 text-xs font-medium text-white text-left hover:text-yellow-400"
@@ -613,9 +610,8 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCurrentPage("/admin");
-                    window.history.pushState({}, "", "/admin");
                     setMobileMenuOpen(false);
+                    window.open("/admin", "_blank");
                   }}
                   data-ocid="nav.link"
                   className="px-3 py-2 text-xs font-semibold text-left"
@@ -632,7 +628,7 @@ export default function App() {
                   className="px-4 py-2 text-sm font-bold rounded text-white text-center"
                   style={{ background: "#25D366" }}
                 >
-                  \ud83d\udcac Join WA Group
+                  Join WA Group
                 </a>
                 <a
                   href={WA_CHANNEL}
@@ -640,7 +636,7 @@ export default function App() {
                   rel="noopener noreferrer"
                   className="px-4 py-2 text-sm font-bold rounded border border-green-400 text-green-400 text-center"
                 >
-                  \ud83d\udce2 WA Channel
+                  WA Channel
                 </a>
                 {isAuthenticated ? (
                   <button
@@ -758,7 +754,7 @@ export default function App() {
                     className="px-6 py-2.5 text-sm font-bold rounded text-white transition-opacity hover:opacity-90"
                     style={{ background: "#f5c842", color: "#0d1b2e" }}
                   >
-                    Our Services \u2192
+                    Our Services
                   </button>
                   <a
                     href="#about"
@@ -915,7 +911,7 @@ export default function App() {
 
                   {/* Company */}
                   <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                    <span>\ud83c\udfe2</span>
+                    <span>🏢</span>
                     <span className="font-semibold">{job.company}</span>
                   </div>
 
@@ -927,7 +923,7 @@ export default function App() {
 
                   {/* Address */}
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                    <span>\ud83c\udfe2</span>
+                    <span>🏢</span>
                     <span>{job.address}</span>
                   </div>
 
@@ -951,7 +947,7 @@ export default function App() {
                     className="w-full py-2.5 text-sm font-bold rounded text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mt-auto"
                     style={{ background: "#25a244" }}
                   >
-                    \ud83d\udcac Apply Now
+                    Apply Now
                   </button>
                 </div>
               ))
@@ -1221,8 +1217,7 @@ export default function App() {
                   data-ocid="footer.link"
                   className="flex items-center gap-2 text-xs text-gray-400 hover:text-green-400 transition-colors"
                 >
-                  <span className="text-green-400">\ud83d\udcac</span> WhatsApp
-                  Group
+                  WhatsApp Group
                 </a>
                 <a
                   href={WA_CHANNEL}
@@ -1231,8 +1226,7 @@ export default function App() {
                   data-ocid="footer.link"
                   className="flex items-center gap-2 text-xs text-gray-400 hover:text-green-400 transition-colors"
                 >
-                  <span className="text-green-400">\ud83d\udce2</span> WhatsApp
-                  Channel
+                  WhatsApp Channel
                 </a>
                 <a
                   href="https://instagram.com/reblehr.agency"
@@ -1301,7 +1295,7 @@ export default function App() {
           className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg text-white text-lg hover:scale-110 transition-transform"
           style={{ background: "#25D366" }}
         >
-          \ud83d\udcac
+          WA
         </a>
         <a
           href="#candidates"
@@ -1368,7 +1362,7 @@ export default function App() {
           {submitted ? (
             <div className="py-10 text-center" data-ocid="apply.success_state">
               <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 bg-green-100">
-                \u2705
+                ✓
               </div>
               <h3 className="text-xl text-gray-900 font-bold mb-2">
                 Application Submitted!
@@ -1567,6 +1561,7 @@ export default function App() {
                   className="text-sm text-gray-900"
                 />
               </div>
+
               <button
                 type="submit"
                 disabled={submitDirectApp.isPending}
