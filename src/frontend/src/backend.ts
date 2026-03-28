@@ -176,6 +176,9 @@ export interface backendInterface {
     updateDirectApplicationStatusWithCredentials(userId: string, password: string, id: bigint, status: ApplicationStatus): Promise<boolean>;
     verifyStaffLogin(userId: string, password: string): Promise<StaffLoginResult | null>;
     isCallerStaffOrAdmin(): Promise<boolean>;
+    requestPasswordResetOTP(userId: string): Promise<boolean>;
+    verifyOTPAndResetPassword(userId: string, otp: string, newPassword: string): Promise<boolean>;
+    listPendingOTPs(): Promise<Array<{userId: string; otp: string}>>;
 }
 import type { Application as _Application, ApplicationStatus as _ApplicationStatus, DirectApplication as _DirectApplication, Job as _Job, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -701,6 +704,42 @@ export class Backend implements backendInterface {
             }
         } else {
             return await (this.actor as any).listAllAttendanceLogs() as any[];
+        }
+    }
+    async requestPasswordResetOTP(userId: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).requestPasswordResetOTP(userId) as boolean;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).requestPasswordResetOTP(userId) as boolean;
+        }
+    }
+    async verifyOTPAndResetPassword(userId: string, otp: string, newPassword: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).verifyOTPAndResetPassword(userId, otp, newPassword) as boolean;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).verifyOTPAndResetPassword(userId, otp, newPassword) as boolean;
+        }
+    }
+    async listPendingOTPs(): Promise<Array<{userId: string; otp: string}>> {
+        if (this.processError) {
+            try {
+                return await (this.actor as any).listPendingOTPs() as Array<{userId: string; otp: string}>;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            return await (this.actor as any).listPendingOTPs() as Array<{userId: string; otp: string}>;
         }
     }
 }

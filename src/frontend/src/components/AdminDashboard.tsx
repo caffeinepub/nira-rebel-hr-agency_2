@@ -105,6 +105,15 @@ export default function AdminDashboard() {
     enabled: !!actor && !!isAdmin,
   });
 
+  const { data: pendingOTPs = [], refetch: refetchOTPs } = useQuery<
+    Array<{ userId: string; otp: string }>
+  >({
+    queryKey: ["pendingOTPs"],
+    queryFn: () => actor!.listPendingOTPs(),
+    enabled: isAdmin === true && !!actor,
+    refetchInterval: 15000,
+  });
+
   // Attendance logs — admin only
   const { data: attendanceLogs = [], isLoading: loadingAttendance } =
     useListAllAttendanceLogs({ enabled: isAdmin === true });
@@ -535,6 +544,73 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+
+            {/* Pending OTP Requests */}
+            <section className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <KeyRound size={18} style={{ color: LIGHT_BLUE }} />
+                <h2 className="text-lg font-bold text-gray-900">
+                  Pending OTP Requests
+                </h2>
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{ background: `${LIGHT_BLUE}22`, color: LIGHT_BLUE }}
+                >
+                  {pendingOTPs.length}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => refetchOTPs()}
+                  className="ml-auto text-xs text-gray-700 border-gray-300"
+                >
+                  Refresh
+                </Button>
+              </div>
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  background: "oklch(0.99 0.003 260)",
+                  borderColor: "oklch(0.88 0.003 260)",
+                }}
+              >
+                {pendingOTPs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No pending OTP requests.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {pendingOTPs.map((item) => (
+                      <div
+                        key={item.userId}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border"
+                        style={{
+                          borderColor: `${LIGHT_BLUE}44`,
+                          background: `${LIGHT_BLUE}0a`,
+                        }}
+                      >
+                        <span className="font-bold text-gray-900">
+                          {item.userId}
+                        </span>
+                        <span
+                          className="font-mono text-lg font-bold px-3 py-1 rounded-full"
+                          style={{
+                            background: `${LIGHT_BLUE}33`,
+                            color: "#1e4a5c",
+                          }}
+                        >
+                          {item.otp}
+                        </span>
+                        <span className="text-xs text-gray-500 sm:ml-auto">
+                          Share this OTP with the staff member to reset their
+                          password.
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
 
             {/* Active Staff List */}
             <section className="mb-10">

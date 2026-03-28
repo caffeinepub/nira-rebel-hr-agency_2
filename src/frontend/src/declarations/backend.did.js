@@ -151,6 +151,9 @@ export const idlService = IDL.Service({
       [],
     ),
   'verifyStaffLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Opt(StaffLoginResult)], ['query']),
+    'requestPasswordResetOTP' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'verifyOTPAndResetPassword' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
+    'listPendingOTPs' : IDL.Func([], [IDL.Vec(IDL.Record({'userId': IDL.Text, 'otp': IDL.Text}))], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -299,6 +302,9 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'verifyStaffLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Opt(StaffLoginResult)], ['query']),
+    'requestPasswordResetOTP' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'verifyOTPAndResetPassword' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Bool], []),
+    'listPendingOTPs' : IDL.Func([], [IDL.Vec(IDL.Record({'userId': IDL.Text, 'otp': IDL.Text}))], ['query']),
   });
 };
 

@@ -30,6 +30,7 @@ import {
   ArrowLeft,
   Clock,
   ClockIcon,
+  KeyRound,
   Loader2,
   MessageCircle,
   Users,
@@ -300,6 +301,15 @@ export default function StaffPortal() {
   const [showPassword, setShowPassword] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotUserId, setForgotUserId] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+  const [forgotSuccess, setForgotSuccess] = useState("");
 
   const [apps, setApps] = useState<Array<[bigint, DirectApplication]>>([]);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -402,6 +412,298 @@ export default function StaffPortal() {
     }
   };
 
+  // ─── Forgot Password Screen ──────────────────────────────────────────────
+  if (forgotPasswordMode) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ background: "oklch(0.97 0.003 260)" }}
+      >
+        <div
+          className="w-full max-w-md rounded-2xl border shadow-lg p-8"
+          style={{
+            background: "oklch(0.99 0.003 260)",
+            borderColor: "oklch(0.88 0.003 260)",
+          }}
+        >
+          <div className="text-center mb-6">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: LIGHT_BLUE }}
+            >
+              <KeyRound size={22} className="text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">
+              {forgotStep === 1 ? "Reset Password" : "Enter OTP & New Password"}
+            </h1>
+          </div>
+
+          {forgotStep === 1 && (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-gray-500 text-center">
+                Enter your Staff UserID to request an OTP from Admin.
+              </p>
+              <div>
+                <label
+                  htmlFor="forgot-userid"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  UserID
+                </label>
+                <Input
+                  id="forgot-userid"
+                  type="text"
+                  value={forgotUserId}
+                  onChange={(e) => {
+                    setForgotUserId(e.target.value);
+                    setForgotError("");
+                  }}
+                  placeholder="Enter your UserID"
+                  className="text-black"
+                />
+              </div>
+              {forgotError && (
+                <div
+                  className="rounded-lg px-4 py-3 text-sm font-medium text-center"
+                  style={{
+                    background: "#fff3f3",
+                    border: "1px solid #fca5a5",
+                    color: "#b91c1c",
+                  }}
+                >
+                  {forgotError}
+                </div>
+              )}
+              {forgotSuccess && (
+                <div
+                  className="rounded-lg px-4 py-3 text-sm font-medium text-center"
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #86efac",
+                    color: "#15803d",
+                  }}
+                >
+                  {forgotSuccess}
+                </div>
+              )}
+              <Button
+                onClick={async () => {
+                  if (!forgotUserId.trim()) {
+                    setForgotError("Please enter your UserID.");
+                    return;
+                  }
+                  if (!actor) {
+                    setForgotError("Connection not ready. Please try again.");
+                    return;
+                  }
+                  setForgotLoading(true);
+                  setForgotError("");
+                  setForgotSuccess("");
+                  try {
+                    const ok = await actor.requestPasswordResetOTP(
+                      forgotUserId.trim(),
+                    );
+                    if (ok) {
+                      setForgotSuccess(
+                        "OTP request sent. Ask your Admin for the 6-digit OTP code.",
+                      );
+                      setForgotStep(2);
+                    } else {
+                      setForgotError(
+                        "UserID not found. Please check and try again.",
+                      );
+                    }
+                  } catch {
+                    setForgotError(
+                      "Failed to send OTP request. Please try again.",
+                    );
+                  } finally {
+                    setForgotLoading(false);
+                  }
+                }}
+                disabled={forgotLoading}
+                className="w-full text-white font-semibold mt-2"
+                style={{ background: LIGHT_BLUE }}
+              >
+                {forgotLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />{" "}
+                    Sending...
+                  </>
+                ) : (
+                  "Request OTP"
+                )}
+              </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordMode(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
+                >
+                  <ArrowLeft size={14} /> Back to Login
+                </button>
+              </div>
+            </div>
+          )}
+
+          {forgotStep === 2 && (
+            <div className="flex flex-col gap-4">
+              <div
+                className="rounded-lg px-4 py-3 text-sm"
+                style={{ background: `${LIGHT_BLUE}22`, color: "#1e4a5c" }}
+              >
+                Your Admin has been notified. Ask them for the 6-digit OTP, then
+                enter it below.
+              </div>
+              <div>
+                <label
+                  htmlFor="forgot-otp"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  OTP Code
+                </label>
+                <Input
+                  id="forgot-otp"
+                  type="text"
+                  value={forgotOtp}
+                  onChange={(e) => {
+                    setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    setForgotError("");
+                  }}
+                  placeholder="6-digit OTP"
+                  className="text-black font-mono tracking-widest"
+                  maxLength={6}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="forgot-newpw"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  New Password
+                </label>
+                <Input
+                  id="forgot-newpw"
+                  type="password"
+                  value={forgotNewPassword}
+                  onChange={(e) => {
+                    setForgotNewPassword(e.target.value);
+                    setForgotError("");
+                  }}
+                  placeholder="Enter new password"
+                  className="text-black"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="forgot-confirmpw"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Confirm New Password
+                </label>
+                <Input
+                  id="forgot-confirmpw"
+                  type="password"
+                  value={forgotConfirmPassword}
+                  onChange={(e) => {
+                    setForgotConfirmPassword(e.target.value);
+                    setForgotError("");
+                  }}
+                  placeholder="Confirm new password"
+                  className="text-black"
+                />
+              </div>
+              {forgotError && (
+                <div
+                  className="rounded-lg px-4 py-3 text-sm font-medium text-center"
+                  style={{
+                    background: "#fff3f3",
+                    border: "1px solid #fca5a5",
+                    color: "#b91c1c",
+                  }}
+                >
+                  {forgotError}
+                </div>
+              )}
+              <Button
+                onClick={async () => {
+                  if (forgotOtp.length !== 6) {
+                    setForgotError("OTP must be 6 digits.");
+                    return;
+                  }
+                  if (!forgotNewPassword) {
+                    setForgotError("Please enter a new password.");
+                    return;
+                  }
+                  if (forgotNewPassword !== forgotConfirmPassword) {
+                    setForgotError("Passwords do not match.");
+                    return;
+                  }
+                  if (!actor) {
+                    setForgotError("Connection not ready. Please try again.");
+                    return;
+                  }
+                  setForgotLoading(true);
+                  setForgotError("");
+                  try {
+                    const ok = await actor.verifyOTPAndResetPassword(
+                      forgotUserId.trim(),
+                      forgotOtp,
+                      forgotNewPassword,
+                    );
+                    if (ok) {
+                      toast.success(
+                        "Password reset successfully. Please log in.",
+                      );
+                      setForgotPasswordMode(false);
+                      setForgotStep(1);
+                      setForgotUserId("");
+                      setForgotOtp("");
+                      setForgotNewPassword("");
+                      setForgotConfirmPassword("");
+                      setForgotError("");
+                      setForgotSuccess("");
+                    } else {
+                      setForgotError(
+                        "Invalid or expired OTP. Please try again.",
+                      );
+                    }
+                  } catch {
+                    setForgotError(
+                      "Failed to reset password. Please try again.",
+                    );
+                  } finally {
+                    setForgotLoading(false);
+                  }
+                }}
+                disabled={forgotLoading}
+                className="w-full text-white font-semibold mt-2"
+                style={{ background: LIGHT_BLUE }}
+              >
+                {forgotLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />{" "}
+                    Resetting...
+                  </>
+                ) : (
+                  "Reset Password"
+                )}
+              </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordMode(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
+                >
+                  <ArrowLeft size={14} /> Back to Login
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   // ─── Login Screen ────────────────────────────────────────────────────────
   if (!session) {
     return (
@@ -517,7 +819,26 @@ export default function StaffPortal() {
             </Button>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="mt-3 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setForgotPasswordMode(true);
+                setForgotStep(1);
+                setForgotError("");
+                setForgotSuccess("");
+                setForgotUserId("");
+                setForgotOtp("");
+                setForgotNewPassword("");
+                setForgotConfirmPassword("");
+              }}
+              className="text-sm underline hover:opacity-80"
+              style={{ color: LIGHT_BLUE }}
+            >
+              Forgot Password?
+            </button>
+          </div>
+          <div className="mt-4 text-center">
             <a
               href="/"
               className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"

@@ -115,6 +115,9 @@ export interface _SERVICE {
     undefined
   >,
   'verifyStaffLogin' : ActorMethod<[string, string], [] | [StaffLoginResult]>,
+  'requestPasswordResetOTP' : ActorMethod<[string], boolean>,
+  'verifyOTPAndResetPassword' : ActorMethod<[string, string, string], boolean>,
+  'listPendingOTPs' : ActorMethod<[], Array<{userId: string; otp: string}>>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

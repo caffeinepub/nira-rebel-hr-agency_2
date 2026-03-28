@@ -1,3 +1,4 @@
+import Int "mo:core/Int";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
@@ -83,6 +84,18 @@ persistent actor {
     date : Text;
   };
 
+  // OTP entry for password reset
+  type OTPEntry = {
+    otp : Text;
+    expiresAt : Int;
+  };
+
+  // Pending OTP info (for admin to view)
+  public type PendingOTPInfo = {
+    userId : Text;
+    otp : Text;
+  };
+
   // Integrate authorization component
   let accessControlState = AccessControl.initState();
   stable var adminAssigned : Bool = false;
@@ -101,6 +114,8 @@ persistent actor {
   let attendanceLogs = Map.empty<Nat, AttendanceLog>();
   // Track active (open) clock-in per staffId
   let activeClockIn = Map.empty<Text, Nat>(); // staffId -> logId
+  // Pending OTPs for password reset
+  let pendingOTPs = Map.empty<Text, OTPEntry>();
 
   stable var nextJobId : Nat = 1;
   stable var nextApplicationId : Nat = 1;
@@ -119,6 +134,20 @@ persistent actor {
 
   func isStaffOrAdmin(caller : Principal) : Bool {
     AccessControl.isAdmin(accessControlState, caller) or isStaff(caller);
+  };
+
+  // Generate a 6-digit OTP from current timestamp
+  func generateOTP() : Text {
+    let t = Int.abs(Time.now());
+    let raw = t % 1_000_000;
+    let s = raw.toText();
+    // Pad to exactly 6 digits
+    if (s.size() == 1) { "00000" # s }
+    else if (s.size() == 2) { "0000" # s }
+    else if (s.size() == 3) { "000" # s }
+    else if (s.size() == 4) { "00" # s }
+    else if (s.size() == 5) { "0" # s }
+    else { s };
   };
 
   // Check if current caller is staff or admin (public query)
@@ -393,6 +422,57 @@ persistent actor {
       };
       case (null) { null };
     };
+  };
+
+  // ─── OTP Password Reset System ───
+
+  // Staff requests an OTP for password reset (anyone can call with userId)
+  // Returns true if userId exists, false otherwise
+  // OTP is stored in backend and visible to admin via listPendingOTPs
+  public shared func requestPasswordResetOTP(userId : Text) : async Bool {
+    switch (staffAccounts.get(userId)) {
+      case (?_) {
+        let otp = generateOTP();
+        // OTP valid for 30 minutes
+        let expiresAt = Time.now() + 30 * 60 * 1_000_000_000;
+        let entry : OTPEntry = { otp; expiresAt };
+        pendingOTPs.add(userId, entry);
+        true;
+      };
+      case (null) { false };
+    };
+  };
+
+  // Verify OTP and reset password
+  public shared func verifyOTPAndResetPassword(userId : Text, otp : Text, newPassword : Text) : async Bool {
+    switch (pendingOTPs.get(userId)) {
+      case (?entry) {
+        if (Text.equal(entry.otp, otp) and Time.now() < entry.expiresAt) {
+          switch (staffAccounts.get(userId)) {
+            case (?account) {
+              let updated : StaffAccount = { account with password = newPassword };
+              staffAccounts.add(userId, updated);
+              pendingOTPs.remove(userId);
+              true;
+            };
+            case (null) { false };
+          };
+        } else {
+          false;
+        };
+      };
+      case (null) { false };
+    };
+  };
+
+  // Admin only: list all pending OTPs so admin can relay them to staff
+  public query ({ caller }) func listPendingOTPs() : async [PendingOTPInfo] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can view pending OTPs");
+    };
+    pendingOTPs.entries().map(func((userId, entry) : (Text, OTPEntry)) : PendingOTPInfo {
+      { userId; otp = entry.otp };
+    }).toArray();
   };
 
   // DirectApplication (open to all, no auth required)

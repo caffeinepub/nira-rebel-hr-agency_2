@@ -44,6 +44,10 @@ export interface StaffLoginResult {
     userId: string;
     name: string;
 }
+export interface PendingOTPInfo {
+    userId: string;
+    otp: string;
+}
 export enum ApplicationStatus {
     interviewed = "interviewed",
     pending = "pending",
@@ -92,4 +96,7 @@ export interface backendInterface {
     listDirectApplicationsWithCredentials(userId: string, password: string): Promise<Array<[bigint, DirectApplication]> | null>;
     updateDirectApplicationStatusWithCredentials(userId: string, password: string, id: bigint, status: ApplicationStatus): Promise<boolean>;
     verifyStaffLogin(userId: string, password: string): Promise<StaffLoginResult | null>;
+    requestPasswordResetOTP(userId: string): Promise<boolean>;
+    verifyOTPAndResetPassword(userId: string, otp: string, newPassword: string): Promise<boolean>;
+    listPendingOTPs(): Promise<PendingOTPInfo[]>;
 }
